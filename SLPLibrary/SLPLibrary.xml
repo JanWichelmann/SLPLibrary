@@ -1,0 +1,327 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>SLPLibrary</name>
+    </assembly>
+    <members>
+        <member name="F:SLPLoader.Loader._resourceID">
+            <summary>
+            Definiert die ID der enthaltenen SLP-Datei.
+            </summary>
+            <remarks></remarks>
+        </member>
+        <member name="F:SLPLoader.Loader._dataBuffer">
+            <summary>
+            Die SLP-Datei.
+            </summary>
+            <remarks></remarks>
+        </member>
+        <member name="P:SLPLoader.Loader.PufferDaten">
+            <summary>
+            Gibt das aktuelle Puffer-Objekt zurück.
+            </summary>
+            <value></value>
+            <returns></returns>
+            <remarks></remarks>
+        </member>
+        <member name="F:SLPLoader.Loader._settings">
+            <summary>
+            Die aus der SLP gelesenen Einstellungen.
+            </summary>
+        </member>
+        <member name="M:SLPLoader.Loader.#ctor(IORAMHelper.RAMBuffer)">
+            <summary>
+            Lädt eine angegebene SLP-Datei.
+            </summary>
+            <param name="Data">Eine Instanz der PufferKlasse-Klasse mit den SLP-Daten.</param>
+            <remarks></remarks>
+        </member>
+        <member name="M:SLPLoader.Loader.loadData">
+            <summary>
+            Lädt die SLP-Daten.
+            </summary>
+            <remarks></remarks>
+        </member>
+        <member name="M:SLPLoader.Loader.writeData">
+            <summary>
+            Speichert die SLP-Daten im Puffer.
+            </summary>
+            <remarks></remarks>
+        </member>
+        <member name="M:SLPLoader.Loader.writeData2(System.String,System.UInt32)">
+            <summary>
+            Speichert die SLP-Daten in einer Datei. TEMPORÄRE HILFSFUNKTION ZUR ERSTELLUNG VON BLANKO-SLPs
+            </summary>
+            <remarks></remarks>
+        </member>
+        <member name="M:SLPLoader.Loader.getFrameAsBitmap(System.UInt32,BMPLoaderNew.ColorTable,SLPLoader.Loader.Masks)">
+            <summary>
+            Gibt den angegebenen Frame als Bitmap-Bild zurück.
+            </summary>
+            <param name="frameID">Die ID des Frames.</param>
+            <param name="Pal">Die zu verwendende Farbpalette als Palette-Objekt.</param>
+            <param name="mask">Optional. Gibt die abzurufende Maske an; Standardwert ist die reine Frame-Grafik.</param>
+            <remarks></remarks>
+        </member>
+        <member name="M:SLPLoader.Loader.getFrameAsColorArray(System.UInt32,BMPLoaderNew.ColorTable,SLPLoader.Loader.Masks)">
+            <summary>
+            Gibt den angegebenen Frame als Farbarray zurück.
+            </summary>
+            <param name="frameID">Die ID des Frames.</param>
+            <param name="Pal">Die zu verwendende Farbpalette als Palette-Objekt.</param>
+            <param name="mask">Optional. Gibt die abzurufende Maske an; Standardwert ist die reine Frame-Grafik.</param>
+            <remarks></remarks>
+        </member>
+        <member name="M:SLPLoader.Loader.addReplaceFrame(System.Int32,BMPLoaderNew.BMPLoader,BMPLoaderNew.ColorTable,System.Int32,System.Int32,SLPLoader.Loader.Settings)">
+            <summary>
+            Ersetzt einen vorhandenen Frame oder fügt einen neuen am Ende hinzu.
+            </summary>
+            <param name="frameID">Die ID des Frames (bei Ersetzung) oder -1 für einen neuen Frame.</param>
+            <param name="frameBitmap">Die Bilddaten, die in Kommando-Daten umgewandelt werden sollen (mit 50500er-Palette versehen).</param>
+            <param name="pal">Die zu verwendende Farbpalette.</param>
+            <param name="ankerX">Die X-Koordinate des Mittelpunkts der Grafik.</param>
+            <param name="ankerY">Die Y-Koordinate des Mittelpunkts der Grafik.</param>
+            <param name="settings">Die Einstellungen als Wert der Settings-Enumeration.</param>
+        </member>
+        <member name="M:SLPLoader.Loader.exportFrame(System.Int32,System.String,SLPLoader.Loader.Masks)">
+            <summary>
+            Exportiert den angegebenen Frame in eine Bitmap-Datei (50500er-Palette).
+            </summary>
+            <param name="frameID">Die ID des zu exportierenden Frame.</param>
+            <param name="filename">Die Bitmap-Datei, in die die Daten geschrieben werden sollen.</param>
+            <param name="mask">Die zu exportierende Maske (oder reine Grafik) als Element der Masks-Enumeration.</param>
+        </member>
+        <member name="P:SLPLoader.Loader.FrameCount">
+            <summary>
+            Gibt die Anzahl der Frames zurück.
+            </summary>
+            <value></value>
+            <returns></returns>
+            <remarks></remarks>
+        </member>
+        <member name="M:SLPLoader.Loader.ReadByte">
+            <summary>
+            Gibt genau ein Byte aus DataBuffer zurück.
+            </summary>
+            <returns></returns>
+            <remarks></remarks>
+        </member>
+        <member name="M:SLPLoader.Loader.ReadBytes(System.Int32)">
+            <summary>
+            Gibt ein Byte-Array aus DataBuffer zurück.
+            </summary>
+            <param name="count">Die Anzahl der auszulesenden Bytes.</param>
+            <returns></returns>
+            <remarks></remarks>
+        </member>
+        <member name="M:SLPLoader.Loader.ReadUShort">
+            <summary>
+            Gibt genau einen UShort-Wert aus DataBuffer zurück.
+            </summary>
+            <returns></returns>
+            <remarks></remarks>
+        </member>
+        <member name="M:SLPLoader.Loader.ReadInteger">
+            <summary>
+            Gibt genau einen Integer-Wert aus DataBuffer zurück.
+            </summary>
+            <returns></returns>
+            <remarks></remarks>
+        </member>
+        <member name="M:SLPLoader.Loader.ReadUInteger">
+            <summary>
+            Gibt genau einen UInteger-Wert aus DataBuffer zurück.
+            </summary>
+            <returns></returns>
+            <remarks></remarks>
+        </member>
+        <member name="M:SLPLoader.Loader.WriteByte(System.Byte)">
+            <summary>
+            Schreibt ein Byte an das Ende des Puffers.
+            </summary>
+            <param name="value">Das zu schreibende Byte.</param>
+            <remarks></remarks>
+        </member>
+        <member name="M:SLPLoader.Loader.WriteBytes(System.Byte[])">
+            <summary>
+            Schreibt ein Byte-Array an das Ende des Puffers.
+            </summary>
+            <param name="value">Das zu schreibende Byte-Array.</param>
+            <remarks></remarks>
+        </member>
+        <member name="M:SLPLoader.Loader.WriteUShort(System.UInt16)">
+            <summary>
+            Schreibt einen UShort-Wert an das Ende des Puffers.
+            </summary>
+            <param name="value">Der zu schreibende Wert.</param>
+            <remarks></remarks>
+        </member>
+        <member name="M:SLPLoader.Loader.WriteInteger(System.Int32)">
+            <summary>
+            Schreibt einen Integer-Wert an das Ende des Puffers.
+            </summary>
+            <param name="value">Der zu schreibende Wert.</param>
+            <remarks></remarks>
+        </member>
+        <member name="M:SLPLoader.Loader.WriteUInteger(System.UInt32)">
+            <summary>
+            Schreibt einen UInteger-Wert an das Ende des Puffers.
+            </summary>
+            <param name="value">Der zu schreibende Wert.</param>
+            <remarks></remarks>
+        </member>
+        <member name="M:SLPLoader.Loader.WriteString(System.String)">
+            <summary>
+            Schreibt eine Zeichenfolge in den Puffer und hängt eine binäre Null dahinter, falls dort keine stehen sollte.
+            </summary>
+            <param name="value">Die zu schreibende Zeichenfolge.</param>
+            <remarks></remarks>
+        </member>
+        <member name="M:SLPLoader.Loader.WriteString(System.String,System.Int32)">
+            <summary>
+            Schreibt eine Zeichenfolge in den Puffer und hängt eine binäre Null dahinter, falls dort keine stehen sollte.
+            </summary>
+            <param name="value">Die zu schreibende Zeichenfolge.</param>
+            <param name="SollLänge">Legt die Länge des Strings fest. Nicht belegte Zeichen werden mit 0-Bytes ergänzt.</param>
+            <remarks></remarks>
+        </member>
+        <member name="T:SLPLoader.Loader.binaryRowedge">
+            <summary>
+            Repräsentiert eine Umriss-Eigenschaft.
+            </summary>
+        </member>
+        <member name="T:SLPLoader.Loader.binaryCommand">
+            <summary>
+            Repräsentiert ein Kommando.
+            </summary>
+        </member>
+        <member name="F:SLPLoader.Loader.binaryCommand._cmdbyte">
+            <summary>
+            Das Kommando-Byte.
+            </summary>
+        </member>
+        <member name="F:SLPLoader.Loader.binaryCommand._nextByte">
+            <summary>
+            Das nächste Byte.
+            </summary>
+        </member>
+        <member name="F:SLPLoader.Loader.binaryCommand._data">
+            <summary>
+            Die beschriebenen Daten.
+            </summary>
+        </member>
+        <member name="F:SLPLoader.Loader.binaryCommand._type">
+            <summary>
+            Hilfsvariable zum Speichern, welche Aktion vorliegt (Anzahl der Konstruktor-Argumente).
+            </summary>
+        </member>
+        <member name="M:SLPLoader.Loader.binaryCommand.#ctor(System.Byte)">
+            <summary>
+            Definiert ein Kommando ohne Daten.
+            </summary>
+            <param name="b">Das Kommando-Byte.</param>
+        </member>
+        <member name="M:SLPLoader.Loader.binaryCommand.#ctor(System.Byte,System.Byte)">
+            <summary>
+            Definiert ein Kommando ohne Daten, aber mit nachfolgendem Byte.
+            </summary>
+            <param name="b">Das Kommando-Byte.</param>
+            <param name="n">Das nachfolgende Byte.</param>
+        </member>
+        <member name="M:SLPLoader.Loader.binaryCommand.#ctor(System.Byte,System.Byte[])">
+            <summary>
+            Definiert ein Kommando mit Daten.
+            </summary>
+            <param name="b">Das Kommando-Byte.</param>
+            <param name="d">Die Daten.</param>
+        </member>
+        <member name="M:SLPLoader.Loader.binaryCommand.#ctor(System.Byte,System.Byte,System.Byte[])">
+            <summary>
+            Definiert ein Kommando mit Daten und mit nachfolgendem Byte.
+            </summary>
+            <param name="b">Das Kommando-Byte.</param>
+            <param name="n">Das nachfolgende Byte.</param>
+            <param name="d">Die Daten.</param>
+        </member>
+        <member name="P:SLPLoader.Loader.binaryCommand.CommandLength">
+            <summary>
+            Ruft die Gesamtlänge des Kommandos ab.
+            </summary>
+        </member>
+        <member name="T:SLPLoader.Loader.Settings">
+            <summary>
+            Definiert die Einstellungen bei der Erstellung der Frame-Kommandotabelle.
+            </summary>
+        </member>
+        <member name="T:SLPLoader.Loader.Masks">
+            <summary>
+            Definiert eine Maske.
+            </summary>
+        </member>
+        <member name="T:SLPLoader.Properties.Resources">
+            <summary>
+              Eine stark typisierte Ressourcenklasse zum Suchen von lokalisierten Zeichenfolgen usw.
+            </summary>
+        </member>
+        <member name="P:SLPLoader.Properties.Resources.ResourceManager">
+            <summary>
+              Gibt die zwischengespeicherte ResourceManager-Instanz zurück, die von dieser Klasse verwendet wird.
+            </summary>
+        </member>
+        <member name="P:SLPLoader.Properties.Resources.Culture">
+            <summary>
+              Überschreibt die CurrentUICulture-Eigenschaft des aktuellen Threads für alle
+              Ressourcenzuordnungen, die diese stark typisierte Ressourcenklasse verwenden.
+            </summary>
+        </member>
+        <member name="F:SLPLoader.Strukturen.Header.Version">
+            <summary>
+            Die Version der SLP. Länge: 4
+            </summary>
+            <remarks></remarks>
+        </member>
+        <member name="F:SLPLoader.Strukturen.Header.Frameanzahl">
+            <summary>
+            Die Anzahl der Frames.
+            </summary>
+            <remarks></remarks>
+        </member>
+        <member name="F:SLPLoader.Strukturen.Header.Kommentar">
+            <summary>
+            Ein Kommentar-String der Länge 24.
+            </summary>
+            <remarks></remarks>
+        </member>
+        <member name="F:SLPLoader.Strukturen.FrameInformationenDaten.RowEdge">
+            <summary>
+            Größe: FIH-&gt;Höhe, 2.
+            </summary>
+            <remarks></remarks>
+        </member>
+        <member name="F:SLPLoader.Strukturen.FrameInformationenDaten.KommandoTabelleOffsets">
+            <summary>
+            Größe: FIH-&gt;Höhe.
+            </summary>
+            <remarks></remarks>
+        </member>
+        <member name="F:SLPLoader.Strukturen.FrameInformationenDaten.KommandoTabelle">
+            <summary>
+            Enthält die umgesetzten Kommandodaten des Frames.
+            Größe: FIH-&gt;Höhe, FIH-&gt;Breite.
+            </summary>
+            <remarks></remarks>
+        </member>
+        <member name="F:SLPLoader.Strukturen.FrameInformationenDaten.BinaryRowEdge">
+            <summary>
+            Die Original-RowEdge-Daten (für den Speichervorgang).
+            Größe: FIH-&gt;Höhe, 2.
+            </summary>
+            <remarks></remarks>
+        </member>
+        <member name="F:SLPLoader.Strukturen.FrameInformationenDaten.BinaryCommandTable">
+            <summary>
+            Die später geschriebene Kommando-Tabelle mit den Kommando-Bytes (für den Speichervorgang).
+            </summary>
+        </member>
+    </members>
+</doc>
