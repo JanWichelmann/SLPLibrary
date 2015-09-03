@@ -54,7 +54,7 @@
             </summary>
             <remarks></remarks>
         </member>
-        <member name="M:SLPLoader.Loader.getFrameAsBitmap(System.UInt32,BMPLoaderNew.ColorTable,SLPLoader.Loader.Masks)">
+        <member name="M:SLPLoader.Loader.getFrameAsBitmap(System.UInt32,BitmapLibrary.ColorTable,SLPLoader.Loader.Masks)">
             <summary>
             Gibt den angegebenen Frame als Bitmap-Bild zurück.
             </summary>
@@ -63,7 +63,7 @@
             <param name="mask">Optional. Gibt die abzurufende Maske an; Standardwert ist die reine Frame-Grafik.</param>
             <remarks></remarks>
         </member>
-        <member name="M:SLPLoader.Loader.getFrameAsColorArray(System.UInt32,BMPLoaderNew.ColorTable,SLPLoader.Loader.Masks)">
+        <member name="M:SLPLoader.Loader.getFrameAsColorArray(System.UInt32,BitmapLibrary.ColorTable,SLPLoader.Loader.Masks)">
             <summary>
             Gibt den angegebenen Frame als Farbarray zurück.
             </summary>
@@ -72,7 +72,7 @@
             <param name="mask">Optional. Gibt die abzurufende Maske an; Standardwert ist die reine Frame-Grafik.</param>
             <remarks></remarks>
         </member>
-        <member name="M:SLPLoader.Loader.addReplaceFrame(System.Int32,BMPLoaderNew.BMPLoader,BMPLoaderNew.ColorTable,System.Int32,System.Int32,SLPLoader.Loader.Settings)">
+        <member name="M:SLPLoader.Loader.addReplaceFrame(System.Int32,BitmapLibrary.BitmapLoader,BitmapLibrary.ColorTable,System.Int32,System.Int32,SLPLoader.Loader.Settings)">
             <summary>
             Ersetzt einen vorhandenen Frame oder fügt einen neuen am Ende hinzu.
             </summary>

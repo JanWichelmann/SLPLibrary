@@ -1,4 +1,4 @@
-﻿using BMPLoaderNew;
+﻿using BitmapLibrary;
 using IORAMHelper;
 using System;
 using System.Collections.Generic;
@@ -1135,7 +1135,7 @@ namespace SLPLoader
 		/// <param name="ankerX">Die X-Koordinate des Mittelpunkts der Grafik.</param>
 		/// <param name="ankerY">Die Y-Koordinate des Mittelpunkts der Grafik.</param>
 		/// <param name="settings">Die Einstellungen als Wert der Settings-Enumeration.</param>
-		public void addReplaceFrame(int frameID, BMPLoader frameBitmap, ColorTable pal, int ankerX, int ankerY, Settings settings)
+		public void addReplaceFrame(int frameID, BitmapLoader frameBitmap, ColorTable pal, int ankerX, int ankerY, Settings settings)
 		{
 			#region Grundlegenes und Initialisierungen
 
@@ -1641,7 +1641,7 @@ namespace SLPLoader
 			Strukturen.FrameInformationenHeader FIH = _frameInformationenHeaders[(int)frameID];
 
 			// Rückgabebild erstellen
-			BMPLoader bmp = new BMPLoader((int)FIH.Breite, (int)FIH.Höhe);
+			BitmapLoader bmp = new BitmapLoader((int)FIH.Breite, (int)FIH.Höhe);
 
 			// Welche Maske ist gewollt?
 			if(mask == Masks.Graphic) // Es handelt sich um die reine Frame-Grafik
