@@ -813,69 +813,14 @@ namespace SLPLoader
 		}
 
 		/// <summary>
-		/// Speichert die SLP-Daten in einer Datei. TEMPORÄRE HILFSFUNKTION ZUR ERSTELLUNG VON BLANKO-SLPs
-		/// </summary>
-		/// <remarks></remarks>
-		public void writeData2(string fname, uint anzFr)
-		{
-			// Zurücksetzen des Puffers
-			_dataBuffer.Clear();
-
-			// Header
-			WriteString("2.0N", 4);
-			WriteUInteger(anzFr);
-			WriteString("ArtDesk 1.00 SLP Writer" + "\0", 24);
-
-			// Frame-Informationen: Header
-			long aktPos = _dataBuffer.Position + anzFr * 32 + 4;
-			for(var i = 0; i < anzFr; i++)
-			{
-				WriteUInteger((uint)aktPos);
-				WriteUInteger((uint)(aktPos - 4));
-				WriteUInteger(0);
-				WriteUInteger(24);
-				WriteUInteger(4);
-				WriteUInteger(1);
-				WriteInteger(0);
-				WriteInteger(0);
-
-				aktPos += 16;
-			}
-
-			// Frameinformationen: Daten
-			for(var i = 0; i < anzFr; i++)
-			{
-				// RowEdge
-				WriteUShort(0);
-				WriteUShort(0);
-
-				// Kommando-Tabelle-Offsets
-				WriteUInteger((uint)(_dataBuffer.Position + 4));
-
-				// Kommando-Tabelle
-				WriteByte(78);
-				WriteByte(4);
-				WriteByte(0);
-				WriteByte(78);
-
-				WriteByte(6); // Kommando 6
-				WriteByte(1); // Länge
-				WriteByte(2); // Daten
-
-				WriteByte(15);
-			}
-
-			_dataBuffer.Save(fname);
-		}
-
-		/// <summary>
 		/// Gibt den angegebenen Frame als Bitmap-Bild zurück.
 		/// </summary>
 		/// <param name="frameID">Die ID des Frames.</param>
 		/// <param name="Pal">Die zu verwendende Farbpalette als Palette-Objekt.</param>
 		/// <param name="mask">Optional. Gibt die abzurufende Maske an; Standardwert ist die reine Frame-Grafik.</param>
+		/// <param name="maskReplacementColor">Optional. Gibt die Farbe an, die anstatt der Masken verwendet werden soll, die nicht angezeigt werden.</param>
 		/// <remarks></remarks>
-		public Bitmap getFrameAsBitmap(uint frameID, ColorTable Pal, Masks mask = Masks.Graphic)
+		public Bitmap getFrameAsBitmap(uint frameID, ColorTable Pal, Masks mask = Masks.Graphic, Color? maskReplacementColor = null)
 		{
 			// Framedaten abrufen
 			Strukturen.FrameInformationenHeader FIH = _frameInformationenHeaders[(int)frameID];
@@ -894,28 +839,29 @@ namespace SLPLoader
 						// Palettenindex abrufen
 						int farbID = _frameInformationenDaten[(int)frameID].KommandoTabelle[j, i];
 
-						// Sonderindizes in die jeweiligen Farben umsetzen; meist Rein-Weiß
+						// Sonderindizes in die jeweiligen Farben umsetzen
+						Color col;
+						if(maskReplacementColor == null)
+							maskReplacementColor = Color.White;
 						switch(farbID)
 						{
 							case -1:
-								farbID = 255;
-								break;
-
 							case -2:
-								farbID = 255;
-								break;
-
 							case -3:
-								farbID = 255;
+								col = maskReplacementColor ?? Color.White;
 								break;
 
 							case -4:
-								farbID = _schatten;
+								col = Pal[_schatten];
+								break;
+
+							default:
+								col = Pal[farbID];
 								break;
 						}
 
 						// Pixel in das Bild schreiben
-						ret.SetPixel(i, j, Pal[farbID]);
+						ret.SetPixel(i, j, col);
 					}
 				}
 			}

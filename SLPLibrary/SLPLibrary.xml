@@ -48,19 +48,14 @@
             </summary>
             <remarks></remarks>
         </member>
-        <member name="M:SLPLoader.Loader.writeData2(System.String,System.UInt32)">
-            <summary>
-            Speichert die SLP-Daten in einer Datei. TEMPORÄRE HILFSFUNKTION ZUR ERSTELLUNG VON BLANKO-SLPs
-            </summary>
-            <remarks></remarks>
-        </member>
-        <member name="M:SLPLoader.Loader.getFrameAsBitmap(System.UInt32,BitmapLibrary.ColorTable,SLPLoader.Loader.Masks)">
+        <member name="M:SLPLoader.Loader.getFrameAsBitmap(System.UInt32,BitmapLibrary.ColorTable,SLPLoader.Loader.Masks,System.Nullable{System.Drawing.Color})">
             <summary>
             Gibt den angegebenen Frame als Bitmap-Bild zurück.
             </summary>
             <param name="frameID">Die ID des Frames.</param>
             <param name="Pal">Die zu verwendende Farbpalette als Palette-Objekt.</param>
             <param name="mask">Optional. Gibt die abzurufende Maske an; Standardwert ist die reine Frame-Grafik.</param>
+            <param name="maskReplacementColor">Optional. Gibt die Farbe an, die anstatt der Masken verwendet werden soll, die nicht angezeigt werden.</param>
             <remarks></remarks>
         </member>
         <member name="M:SLPLoader.Loader.getFrameAsColorArray(System.UInt32,BitmapLibrary.ColorTable,SLPLoader.Loader.Masks)">
