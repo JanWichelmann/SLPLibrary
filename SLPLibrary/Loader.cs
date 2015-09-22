@@ -819,8 +819,9 @@ namespace SLPLoader
 		/// <param name="Pal">Die zu verwendende Farbpalette als Palette-Objekt.</param>
 		/// <param name="mask">Optional. Gibt die abzurufende Maske an; Standardwert ist die reine Frame-Grafik.</param>
 		/// <param name="maskReplacementColor">Optional. Gibt die Farbe an, die anstatt der Masken verwendet werden soll, die nicht angezeigt werden.</param>
+		/// <param name="shadowColor">Optional. Gibt die Farbe an, die für Schatten verwendet werden soll.</param>
 		/// <remarks></remarks>
-		public Bitmap getFrameAsBitmap(uint frameID, ColorTable Pal, Masks mask = Masks.Graphic, Color? maskReplacementColor = null)
+		public Bitmap getFrameAsBitmap(uint frameID, ColorTable Pal, Masks mask = Masks.Graphic, Color? maskReplacementColor = null, Color? shadowColor = null)
 		{
 			// Framedaten abrufen
 			Strukturen.FrameInformationenHeader FIH = _frameInformationenHeaders[(int)frameID];
@@ -852,7 +853,7 @@ namespace SLPLoader
 								break;
 
 							case -4:
-								col = Pal[_schatten];
+								col = shadowColor ?? Pal[_schatten];
 								break;
 
 							default:

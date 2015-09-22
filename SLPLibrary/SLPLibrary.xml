@@ -48,7 +48,7 @@
             </summary>
             <remarks></remarks>
         </member>
-        <member name="M:SLPLoader.Loader.getFrameAsBitmap(System.UInt32,BitmapLibrary.ColorTable,SLPLoader.Loader.Masks,System.Nullable{System.Drawing.Color})">
+        <member name="M:SLPLoader.Loader.getFrameAsBitmap(System.UInt32,BitmapLibrary.ColorTable,SLPLoader.Loader.Masks,System.Nullable{System.Drawing.Color},System.Nullable{System.Drawing.Color})">
             <summary>
             Gibt den angegebenen Frame als Bitmap-Bild zurück.
             </summary>
@@ -56,6 +56,7 @@
             <param name="Pal">Die zu verwendende Farbpalette als Palette-Objekt.</param>
             <param name="mask">Optional. Gibt die abzurufende Maske an; Standardwert ist die reine Frame-Grafik.</param>
             <param name="maskReplacementColor">Optional. Gibt die Farbe an, die anstatt der Masken verwendet werden soll, die nicht angezeigt werden.</param>
+            <param name="shadowColor">Optional. Gibt die Farbe an, die für Schatten verwendet werden soll.</param>
             <remarks></remarks>
         </member>
         <member name="M:SLPLoader.Loader.getFrameAsColorArray(System.UInt32,BitmapLibrary.ColorTable,SLPLoader.Loader.Masks)">
