@@ -3,17 +3,18 @@ using IORAMHelper;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Drawing.Imaging;
 using System.Linq;
 
-/// <summary>
-/// Diese Klasse repräsentiert eine SLP-Datei.
-/// </summary>
-/// <remarks></remarks>
 namespace SLPLoader
 {
-	public class Loader
+	/// <summary>
+	/// Diese Klasse repräsentiert eine SLP-Datei.
+	/// </summary>
+	/// <remarks></remarks>
+	public class SLPFile
 	{
-		#region Definitionen
+		#region Variablen
 
 		/// <summary>
 		/// Definiert die ID der enthaltenen SLP-Datei.
@@ -33,7 +34,7 @@ namespace SLPLoader
 		/// <value></value>
 		/// <returns></returns>
 		/// <remarks></remarks>
-		public object PufferDaten
+		public object DataBuffer
 		{
 			get
 			{
@@ -46,9 +47,9 @@ namespace SLPLoader
 		/// </summary>
 		public Settings _settings;
 
-		public Strukturen.Header _headers = new Strukturen.Header();
-		public List<Strukturen.FrameInformationenHeader> _frameInformationenHeaders = new List<Strukturen.FrameInformationenHeader>();
-		public List<Strukturen.FrameInformationenDaten> _frameInformationenDaten = new List<Strukturen.FrameInformationenDaten>();
+		public Header _headers = new Header();
+		public List<FrameInformationHeader> _frameInformationHeaders = new List<FrameInformationHeader>();
+		public List<FrameInformationData> _frameInformationenDaten = new List<FrameInformationData>();
 
 		// Umgesetzte Befehlswerte. Übernommen vom Mod Workshop.
 		private const byte _maske = 0; // -1
@@ -57,7 +58,7 @@ namespace SLPLoader
 		private const byte _outline2 = 124; // -3
 		private const byte _schatten = 131;  // -4
 
-		#endregion Definitionen
+		#endregion
 
 		#region Funktionen
 
@@ -66,7 +67,7 @@ namespace SLPLoader
 		/// </summary>
 		/// <param name="Data">Eine Instanz der PufferKlasse-Klasse mit den SLP-Daten.</param>
 		/// <remarks></remarks>
-		public Loader(RAMBuffer Data)
+		public SLPFile(RAMBuffer Data)
 		{
 			_dataBuffer = Data;
 			_dataBuffer.Position = 0;
@@ -84,8 +85,8 @@ namespace SLPLoader
 			#region SLP-Header
 
 			_headers.Version = _dataBuffer.ReadString(4);
-			_headers.Frameanzahl = ReadUInteger();
-			_headers.Kommentar = _dataBuffer.ReadString(24);
+			_headers.FrameCount = ReadUInteger();
+			_headers.Comment = _dataBuffer.ReadString(24);
 
 			#endregion SLP-Header
 
@@ -93,33 +94,33 @@ namespace SLPLoader
 
 			#region Frame-Header
 
-			for(int i = 0; i < _headers.Frameanzahl; i++)
+			for(int i = 0; i < _headers.FrameCount; i++)
 			{
 				// Neues Frame-Header-Objekt erstellen
-				Strukturen.FrameInformationenHeader aktFIH = new Strukturen.FrameInformationenHeader();
+				FrameInformationHeader aktFIH = new FrameInformationHeader();
 
 				// Der Zeichenindex in der SLP-Datei, an dem die Kommandotabelle des Frames beginnt
-				aktFIH.FrameKommandoOffset = ReadUInteger();
+				aktFIH.FrameCommandsOffset = ReadUInteger();
 
 				// Der Zeichenindex in der SLP-Datei, an dem die Umrissdaten (RowEdge) des Frames gespeichert sind
-				aktFIH.FrameUmrissOffset = ReadUInteger();
+				aktFIH.FrameOutlineOffset = ReadUInteger();
 
 				// Der Zeichenindex in der SLP-Datei, an dem die Farbpalette des Frames definiert ist; Genaueres ist nicht bekannt
 				aktFIH.PaletteOffset = ReadUInteger();
 
 				// Die Frame-Eigenschaften; die Bedeutung dieses Werts ist unbekannt
-				aktFIH.Eigenschaften = ReadUInteger();
+				aktFIH.Properties = ReadUInteger();
 
 				// Die Abmessungen des Frames
-				aktFIH.Breite = ReadUInteger();
-				aktFIH.Höhe = ReadUInteger();
+				aktFIH.Width = ReadUInteger();
+				aktFIH.Height = ReadUInteger();
 
 				// Die Anker (Mittelpunkt) des Frames
-				aktFIH.XAnker = ReadInteger();
-				aktFIH.YAnker = ReadInteger();
+				aktFIH.AnchorX = ReadInteger();
+				aktFIH.AnchorY = ReadInteger();
 
 				// Frame-Header in die zentrale Liste schreiben
-				_frameInformationenHeaders.Add(aktFIH);
+				_frameInformationHeaders.Add(aktFIH);
 			}
 
 			#endregion Frame-Header
@@ -136,25 +137,25 @@ namespace SLPLoader
 			bool useShadow = false;
 
 			// Frames einzeln durchgehen
-			for(int i = 0; i < _headers.Frameanzahl; i++)
+			for(int i = 0; i < _headers.FrameCount; i++)
 			{
 				// Spielernummer einer ggf. ausgegebenen Einheit
 				const byte Spielernummer = 0; // Spieler 1 => Blau
 
 				// Frame-Header-Daten abrufen
-				Strukturen.FrameInformationenHeader aktFIH = _frameInformationenHeaders[i];
+				FrameInformationHeader aktFIH = _frameInformationHeaders[i];
 
 				// Neues Frame-Daten-Objekt erstellen
-				Strukturen.FrameInformationenDaten aktFID = new Strukturen.FrameInformationenDaten();
+				FrameInformationData aktFID = new FrameInformationData();
 
 				// RowEdge (leere Fläche [=> Transparenz, ohne Kommandos], von den Bildrändern ausgehend)
 
 				#region RowEdge-Daten
 
 				// Arrays initialisieren: Das RowEdge-Array und das BinaryRowEdge-Array, um bei unveränderten Frames dieses nicht neu berechnen zu müssen und direkt schreiben zu können
-				aktFID.RowEdge = new ushort[aktFIH.Höhe, 2];
-				aktFID.BinaryRowEdge = new binaryRowedge[aktFIH.Höhe];
-				for(int j = 0; j < aktFIH.Höhe; j++)
+				aktFID.RowEdge = new ushort[aktFIH.Height, 2];
+				aktFID.BinaryRowEdge = new BinaryRowedge[aktFIH.Height];
+				for(int j = 0; j < aktFIH.Height; j++)
 				{
 					// Werte einlesen
 					ushort left = ReadUShort(); // Links
@@ -163,15 +164,15 @@ namespace SLPLoader
 					// Evtl. falsche Werte korrigieren
 					{
 						// Links
-						if(left > aktFIH.Breite)
+						if(left > aktFIH.Width)
 						{
-							left = (ushort)aktFIH.Breite;
+							left = (ushort)aktFIH.Width;
 						}
 
 						// Rechts
-						if(right > aktFIH.Breite)
+						if(right > aktFIH.Width)
 						{
-							right = (ushort)aktFIH.Breite;
+							right = (ushort)aktFIH.Width;
 						}
 					}
 
@@ -180,7 +181,7 @@ namespace SLPLoader
 					aktFID.RowEdge[j, 1] = right;
 
 					// Binäres RowEdge mitschreiben
-					aktFID.BinaryRowEdge[j] = new binaryRowedge(left, right);
+					aktFID.BinaryRowEdge[j] = new BinaryRowedge(left, right);
 				}
 
 				#endregion RowEdge-Daten
@@ -189,10 +190,10 @@ namespace SLPLoader
 
 				#region Kommandotabellen-Offsets
 
-				aktFID.KommandoTabelleOffsets = new uint[aktFIH.Höhe];
-				for(int j = 0; j < aktFIH.Höhe; j++)
+				aktFID.CommandTableOffsets = new uint[aktFIH.Height];
+				for(int j = 0; j < aktFIH.Height; j++)
 				{
-					aktFID.KommandoTabelleOffsets[j] = ReadUInteger();
+					aktFID.CommandTableOffsets[j] = ReadUInteger();
 				}
 
 				#endregion Kommandotabellen-Offsets
@@ -202,9 +203,9 @@ namespace SLPLoader
 				#region Kommandotabelle
 
 				// Gleichzeitig wird die binaryCommands-Variable miterzeugt, um unveränderte Frames ggf. ohne Umweg über eine Neuerstellung der Kommandos wieder in die *.slp schreiben zu können
-				aktFID.KommandoTabelle = new int[aktFIH.Höhe, aktFIH.Breite];
-				aktFID.BinaryCommandTable = new List<binaryCommand>();
-				for(int j = 0; j < aktFIH.Höhe; j++)
+				aktFID.CommandTable = new int[aktFIH.Height, aktFIH.Width];
+				aktFID.BinaryCommandTable = new List<BinaryCommand>();
+				for(int j = 0; j < aktFIH.Height; j++)
 				{
 					// Gibt die aktuelle X-Position innerhalb des generierten Bildes (in Pixeln) an
 					int aktPtr = 0;
@@ -212,7 +213,7 @@ namespace SLPLoader
 					// Linker RowEdge-Bereich ist leer => transparent, also -1
 					for(int k = 0; k < aktFID.RowEdge[j, 0]; k++)
 					{
-						aktFID.KommandoTabelle[j, aktPtr + k] = -1;
+						aktFID.CommandTable[j, aktPtr + k] = -1;
 					}
 
 					// Linker RowEdge-Bereich ist komplett in das Bild geschrieben worden
@@ -248,7 +249,7 @@ namespace SLPLoader
 									// Daten in die Kommandotabelle schreiben
 									for(int k = 0; k < len; k++)
 									{
-										aktFID.KommandoTabelle[j, aktPtr + k] = dat[k];
+										aktFID.CommandTable[j, aktPtr + k] = dat[k];
 									}
 
 									// Es wurden len Pixel eingelesen
@@ -272,7 +273,7 @@ namespace SLPLoader
 									// Transparenz in die Kommandotabelle schreiben
 									for(int k = 0; k < len; k++)
 									{
-										aktFID.KommandoTabelle[j, aktPtr + k] = -1;
+										aktFID.CommandTable[j, aktPtr + k] = -1;
 									}
 
 									// Es wurden len Pixel eingelesen
@@ -302,7 +303,7 @@ namespace SLPLoader
 									// Daten in die Kommandotabelle schreiben
 									for(int k = 0; k < len; k++)
 									{
-										aktFID.KommandoTabelle[j, aktPtr + k] = dat[k];
+										aktFID.CommandTable[j, aktPtr + k] = dat[k];
 									}
 
 									// Es wurden len Pixel eingelesen
@@ -326,7 +327,7 @@ namespace SLPLoader
 									// Transparenz in die Kommandotabelle schreiben
 									for(int k = 0; k < len; k++)
 									{
-										aktFID.KommandoTabelle[j, aktPtr + k] = -1;
+										aktFID.CommandTable[j, aktPtr + k] = -1;
 									}
 
 									// Es wurden len Pixel eingelesen
@@ -373,7 +374,7 @@ namespace SLPLoader
 										aktVal = (byte)(aktVal + 16 + 16 * Spielernummer);
 
 										// Wert in das Bild schreiben
-										aktFID.KommandoTabelle[j, aktPtr + k] = aktVal;
+										aktFID.CommandTable[j, aktPtr + k] = aktVal;
 
 										// Wert zurück in Array schreiben, um das Schreiben der Binary-Daten zu erleichtern
 										dat[k] += 16;
@@ -420,7 +421,7 @@ namespace SLPLoader
 									for(int k = 0; k < len; k++)
 									{
 										// Farbe in das Bild schreiben
-										aktFID.KommandoTabelle[j, aktPtr + k] = farbe;
+										aktFID.CommandTable[j, aktPtr + k] = farbe;
 
 										// Farbe in das Array übernehmen
 										dat[k] = farbe;
@@ -470,7 +471,7 @@ namespace SLPLoader
 										aktVal = (byte)(aktVal + 16 + 16 * Spielernummer);
 
 										// Wert in das Bild schreiben
-										aktFID.KommandoTabelle[j, aktPtr + k] = aktVal;
+										aktFID.CommandTable[j, aktPtr + k] = aktVal;
 
 										// Wert zurück in Array schreiben, um das Schreiben der Binary-Daten zu erleichtern
 										dat[k] = (byte)(farbe + 16);
@@ -511,7 +512,7 @@ namespace SLPLoader
 									for(int k = 0; k < len; k++)
 									{
 										// Schatten in Bild schreiben
-										aktFID.KommandoTabelle[j, aktPtr + k] = -4;
+										aktFID.CommandTable[j, aktPtr + k] = -4;
 									}
 
 									// Es wurden len Pixel eingelesen
@@ -535,7 +536,7 @@ namespace SLPLoader
 										case 0x4E:
 											{
 												// Outline auf Bild schreiben
-												aktFID.KommandoTabelle[j, aktPtr] = -2;
+												aktFID.CommandTable[j, aktPtr] = -2;
 
 												// Es wurde ein Pixel eingelesen
 												aktPtr += 1;
@@ -553,7 +554,7 @@ namespace SLPLoader
 										case 0x6E:
 											{
 												// Outline auf Bild schreiben
-												aktFID.KommandoTabelle[j, aktPtr] = -3;
+												aktFID.CommandTable[j, aktPtr] = -3;
 
 												// Es wurde ein Pixel eingelesen
 												aktPtr += 1;
@@ -576,7 +577,7 @@ namespace SLPLoader
 												// Outlinepixel in der angegebenen Anzahl auf das Bild schreiben
 												for(int k = 0; k < len; k++)
 												{
-													aktFID.KommandoTabelle[j, aktPtr + k] = -2;
+													aktFID.CommandTable[j, aktPtr + k] = -2;
 												}
 
 												// Es wurden len Pixel eingelesen
@@ -600,7 +601,7 @@ namespace SLPLoader
 												// Outlinepixel in der angegebenen Anzahl auf das Bild schreiben
 												for(int k = 0; k < len; k++)
 												{
-													aktFID.KommandoTabelle[j, aktPtr + k] = -3;
+													aktFID.CommandTable[j, aktPtr + k] = -3;
 												}
 
 												// Es wurden len Pixel eingelesen
@@ -635,7 +636,7 @@ namespace SLPLoader
 					// Rechtes RowEdge einfügen (leere Bereiche) Leere Bereiche sind transparent, also erstmal -1 als Palettenindex schreiben
 					for(int k = 0; k < aktFID.RowEdge[j, 1]; k++)
 					{
-						aktFID.KommandoTabelle[j, aktPtr + k] = -1;
+						aktFID.CommandTable[j, aktPtr + k] = -1;
 					}
 					aktPtr += aktFID.RowEdge[j, 1];
 				} // Ende for: Zeile für Zeile
@@ -667,13 +668,13 @@ namespace SLPLoader
 
 			// Header
 			WriteString(_headers.Version, 4);
-			WriteUInteger((uint)_frameInformationenHeaders.Count());
-			WriteString(_headers.Kommentar, 24);
+			WriteUInteger((uint)_frameInformationHeaders.Count());
+			WriteString(_headers.Comment, 24);
 
 			#region Berechnungen zu den einzelnen Frames
 
 			// Anzahl der Frames ermitteln
-			uint anzahlFrames = (uint)_frameInformationenHeaders.Count();
+			uint anzahlFrames = (uint)_frameInformationHeaders.Count();
 
 			// Offset der ersten RowEdge-Definition (SLP-Header: 32 Byte; Frame-Header: 32 Byte pro Frame)
 			uint pointer = 32 + 32 * anzahlFrames;
@@ -682,35 +683,35 @@ namespace SLPLoader
 			for(int i = 0; i < anzahlFrames; i++)
 			{
 				// Aktuelle Frameheader abrufen
-				Strukturen.FrameInformationenHeader aktFIH = _frameInformationenHeaders[i];
+				FrameInformationHeader aktFIH = _frameInformationHeaders[i];
 
 				// Umriss-Offset speichern
-				aktFIH.FrameUmrissOffset = pointer;
+				aktFIH.FrameOutlineOffset = pointer;
 
 				// Die Offset-Daten sind jeweils Höhe * 4 Byte lang
-				pointer += aktFIH.Höhe * 4;
+				pointer += aktFIH.Height * 4;
 
 				// Hier sind dann die Kommando-Offsets definiert
-				aktFIH.FrameKommandoOffset = pointer;
+				aktFIH.FrameCommandsOffset = pointer;
 
 				// Die Kommando-Offsets sind ebenfalls Höhe * 4 Byte lang
-				pointer += aktFIH.Höhe * 4;
+				pointer += aktFIH.Height * 4;
 
 				// Berechnung der Kommando-Offsets
-				Strukturen.FrameInformationenDaten aktFID = _frameInformationenDaten[i];
+				FrameInformationData aktFID = _frameInformationenDaten[i];
 
 				// Offsets der Kommandotabelle berechnen
-				for(int j = 0; j < aktFIH.Höhe; j++)
+				for(int j = 0; j < aktFIH.Height; j++)
 				{
 					// Kommando-Offset der aktuellen Zeile
-					aktFID.KommandoTabelleOffsets[j] = pointer;
+					aktFID.CommandTableOffsets[j] = pointer;
 
 					// Länge der Kommandobytes zur aktuellen Pointerposition addieren, um das nächste Offset angeben zu können
 					pointer += (uint)cmdByteLengthInLine(ref aktFID, j);
 				}
 
 				// FIH und FID speichern
-				_frameInformationenHeaders[i] = aktFIH;
+				_frameInformationHeaders[i] = aktFIH;
 				_frameInformationenDaten[i] = aktFID;
 			}
 
@@ -723,23 +724,23 @@ namespace SLPLoader
 			for(int i = 0; i < anzahlFrames; i++)
 			{
 				// Aktuelle Frameheader abrufen
-				Strukturen.FrameInformationenHeader aktFIH = _frameInformationenHeaders[i];
+				FrameInformationHeader aktFIH = _frameInformationHeaders[i];
 
 				// Das Paletten-Offset ist 0
 				aktFIH.PaletteOffset = 0;
 
 				// Die Eigenschaften sind immer 24 (?)
-				aktFIH.Eigenschaften = 24;
+				aktFIH.Properties = 24;
 
 				// Werte schreiben
-				WriteUInteger(aktFIH.FrameKommandoOffset);
-				WriteUInteger(aktFIH.FrameUmrissOffset);
+				WriteUInteger(aktFIH.FrameCommandsOffset);
+				WriteUInteger(aktFIH.FrameOutlineOffset);
 				WriteUInteger(aktFIH.PaletteOffset);
-				WriteUInteger(aktFIH.Eigenschaften);
-				WriteUInteger(aktFIH.Breite);
-				WriteUInteger(aktFIH.Höhe);
-				WriteInteger(aktFIH.XAnker);
-				WriteInteger(aktFIH.YAnker);
+				WriteUInteger(aktFIH.Properties);
+				WriteUInteger(aktFIH.Width);
+				WriteUInteger(aktFIH.Height);
+				WriteInteger(aktFIH.AnchorX);
+				WriteInteger(aktFIH.AnchorY);
 			}
 
 			#endregion Frameheader schreiben
@@ -748,22 +749,22 @@ namespace SLPLoader
 
 			#region Framedaten schreiben
 
-			for(int i = 0; i < _headers.Frameanzahl; i++)
+			for(int i = 0; i < _headers.FrameCount; i++)
 			{
-				Strukturen.FrameInformationenHeader aktFIH = _frameInformationenHeaders[i];
-				Strukturen.FrameInformationenDaten aktFID = _frameInformationenDaten[i];
+				FrameInformationHeader aktFIH = _frameInformationHeaders[i];
+				FrameInformationData aktFID = _frameInformationenDaten[i];
 
 				// RowEdge
-				for(int j = 0; j < aktFIH.Höhe; j++)
+				for(int j = 0; j < aktFIH.Height; j++)
 				{
 					WriteUShort((ushort)aktFID.BinaryRowEdge[j]._left);
 					WriteUShort((ushort)aktFID.BinaryRowEdge[j]._right);
 				}
 
 				// Kommando-Tabelle-Offsets
-				for(int j = 0; j < aktFIH.Höhe; j++)
+				for(int j = 0; j < aktFIH.Height; j++)
 				{
-					WriteUInteger(aktFID.KommandoTabelleOffsets[j]);
+					WriteUInteger(aktFID.CommandTableOffsets[j]);
 				}
 
 				// Kommando-Tabelle
@@ -771,7 +772,7 @@ namespace SLPLoader
 				for(int j = 0; j < anzCommands; j++)
 				{
 					// Aktuelles Kommando abrufen
-					binaryCommand aktC = aktFID.BinaryCommandTable[j];
+					BinaryCommand aktC = aktFID.BinaryCommandTable[j];
 
 					// Nach Typen unterscheidend die jeweiligen Daten schreiben
 					if(aktC._type == "one")
@@ -824,47 +825,59 @@ namespace SLPLoader
 		public Bitmap getFrameAsBitmap(uint frameID, ColorTable Pal, Masks mask = Masks.Graphic, Color? maskReplacementColor = null, Color? shadowColor = null)
 		{
 			// Framedaten abrufen
-			Strukturen.FrameInformationenHeader FIH = _frameInformationenHeaders[(int)frameID];
+			FrameInformationHeader frameHeader = _frameInformationHeaders[(int)frameID];
+			FrameInformationData frameData = _frameInformationenDaten[(int)frameID];
 
 			// Rückgabebild erstellen
-			Bitmap ret = new Bitmap((int)FIH.Breite, (int)FIH.Höhe);
+			Bitmap ret = new Bitmap((int)frameHeader.Width, (int)frameHeader.Height);
 
 			// Welche Maske ist gewollt?
 			if(mask == Masks.Graphic) // Es handelt sich um die reine Frame-Grafik
 			{
-				// Bild pixelweise durchgehen
-				for(int i = 0; i < FIH.Breite; i++)
+				// Unsafe ist hier enorm schneller als SetPixel()
+				BitmapData retData = ret.LockBits(new Rectangle(0, 0, ret.Width, ret.Height), System.Drawing.Imaging.ImageLockMode.ReadWrite, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+				int retStride = retData.Stride;
+				unsafe
 				{
-					for(int j = 0; j < FIH.Höhe; j++)
+					// Pixelpointer abrufen
+					byte* ptr = (byte*)retData.Scan0;
+
+					// Bild pixelweise durchgehen
+					for(int i = 0; i < frameHeader.Width; i++)
 					{
-						// Palettenindex abrufen
-						int farbID = _frameInformationenDaten[(int)frameID].KommandoTabelle[j, i];
-
-						// Sonderindizes in die jeweiligen Farben umsetzen
-						Color col;
-						if(maskReplacementColor == null)
-							maskReplacementColor = Color.White;
-						switch(farbID)
+						for(int j = 0; j < frameHeader.Height; j++)
 						{
-							case -1:
-							case -2:
-							case -3:
-								col = maskReplacementColor ?? Color.White;
-								break;
+							// Palettenindex abrufen
+							int farbID = frameData.CommandTable[j, i];
 
-							case -4:
-								col = shadowColor ?? Pal[_schatten];
-								break;
+							// Sonderindizes in die jeweiligen Farben umsetzen
+							Color col;
+							switch(farbID)
+							{
+								case -1:
+								case -2:
+								case -3:
+									col = maskReplacementColor ?? Color.White;
+									break;
 
-							default:
-								col = Pal[farbID];
-								break;
+								case -4:
+									col = shadowColor ?? Pal[_schatten];
+									break;
+
+								default:
+									col = Pal[farbID];
+									break;
+							}
+
+							// Pixel in das Bild schreiben
+							ptr[i * 4 + j * retStride] = col.B;
+							ptr[i * 4 + j * retStride + 1] = col.G;
+							ptr[i * 4 + j * retStride + 2] = col.R;
+							ptr[i * 4 + j * retStride + 3] = col.A;
 						}
-
-						// Pixel in das Bild schreiben
-						ret.SetPixel(i, j, col);
 					}
 				}
+				ret.UnlockBits(retData);
 			}
 			else if(mask != Masks.PlayerColor) // Es handelt sich um eine Maske (außer der Spielerfarbe)
 			{
@@ -893,12 +906,12 @@ namespace SLPLoader
 				}
 
 				// Bild pixelweise durchgehen
-				for(int i = 0; i < FIH.Breite; i++)
+				for(int i = 0; i < frameHeader.Width; i++)
 				{
-					for(int j = 0; j < FIH.Höhe; j++)
+					for(int j = 0; j < frameHeader.Height; j++)
 					{
 						// Palettenindex abrufen
-						int farbID = _frameInformationenDaten[(int)frameID].KommandoTabelle[j, i];
+						int farbID = _frameInformationenDaten[(int)frameID].CommandTable[j, i];
 
 						// Je nach Masken Farben setzen
 						if(farbID == maskIndex)
@@ -920,12 +933,12 @@ namespace SLPLoader
 			else // Spielerfarbe
 			{
 				// Bild pixelweise durchgehen
-				for(int i = 0; i < FIH.Breite; i++)
+				for(int i = 0; i < frameHeader.Width; i++)
 				{
-					for(int j = 0; j < FIH.Höhe; j++)
+					for(int j = 0; j < frameHeader.Height; j++)
 					{
 						// Palettenindex abrufen
-						int farbID = _frameInformationenDaten[(int)frameID].KommandoTabelle[j, i];
+						int farbID = _frameInformationenDaten[(int)frameID].CommandTable[j, i];
 
 						// Liegt keine Spielerfarbe vor?
 						if(farbID < 16 || farbID > 23)
@@ -954,21 +967,21 @@ namespace SLPLoader
 		public Color[,] getFrameAsColorArray(uint frameID, ColorTable Pal, Masks mask = Masks.Graphic)
 		{
 			// Framedaten abrufen
-			Strukturen.FrameInformationenHeader FIH = _frameInformationenHeaders[(int)frameID];
+			FrameInformationHeader FIH = _frameInformationHeaders[(int)frameID];
 
 			// Rückgabebild erstellen
-			Color[,] ret = new Color[FIH.Breite, FIH.Höhe];
+			Color[,] ret = new Color[FIH.Width, FIH.Height];
 
 			// Welche Maske ist gewollt?
 			if(mask == Masks.Graphic) // Es handelt sich um die reine Frame-Grafik
 			{
 				// Bild pixelweise durchgehen
-				for(int i = 0; i < FIH.Breite; i++)
+				for(int i = 0; i < FIH.Width; i++)
 				{
-					for(int j = 0; j < FIH.Höhe; j++)
+					for(int j = 0; j < FIH.Height; j++)
 					{
 						// Palettenindex abrufen
-						int farbID = _frameInformationenDaten[(int)frameID].KommandoTabelle[j, i];
+						int farbID = _frameInformationenDaten[(int)frameID].CommandTable[j, i];
 
 						// Sonderindizes in die jeweiligen Farben umsetzen; meist Rein-Weiß
 						switch(farbID)
@@ -1022,12 +1035,12 @@ namespace SLPLoader
 				}
 
 				// Bild pixelweise durchgehen
-				for(int i = 0; i < FIH.Breite; i++)
+				for(int i = 0; i < FIH.Width; i++)
 				{
-					for(int j = 0; j < FIH.Höhe; j++)
+					for(int j = 0; j < FIH.Height; j++)
 					{
 						// Palettenindex abrufen
-						int farbID = _frameInformationenDaten[(int)frameID].KommandoTabelle[j, i];
+						int farbID = _frameInformationenDaten[(int)frameID].CommandTable[j, i];
 
 						// Je nach Masken Farben setzen
 						if(farbID == maskIndex)
@@ -1049,12 +1062,12 @@ namespace SLPLoader
 			else // Spielerfarbe
 			{
 				// Bild pixelweise durchgehen
-				for(int i = 0; i < FIH.Breite; i++)
+				for(int i = 0; i < FIH.Width; i++)
 				{
-					for(int j = 0; j < FIH.Höhe; j++)
+					for(int j = 0; j < FIH.Height; j++)
 					{
 						// Palettenindex abrufen
-						int farbID = _frameInformationenDaten[(int)frameID].KommandoTabelle[j, i];
+						int farbID = _frameInformationenDaten[(int)frameID].CommandTable[j, i];
 
 						// Liegt keine Spielerfarbe vor?
 						if(farbID < 16 || farbID > 23)
@@ -1091,17 +1104,17 @@ namespace SLPLoader
 			int width = frameBitmap.Width;
 
 			// Framedaten
-			Strukturen.FrameInformationenDaten aktFID;
-			Strukturen.FrameInformationenHeader aktFIH;
+			FrameInformationData aktFID;
+			FrameInformationHeader aktFIH;
 
 			// Neuer Frame?
 			if(frameID < 0 || frameID >= _frameInformationenDaten.Count)
 			{
 				// Neue Framedaten erstellen
-				aktFID = new Strukturen.FrameInformationenDaten();
+				aktFID = new FrameInformationData();
 				_frameInformationenDaten.Add(aktFID);
-				aktFIH = new Strukturen.FrameInformationenHeader();
-				_frameInformationenHeaders.Add(aktFIH);
+				aktFIH = new FrameInformationHeader();
+				_frameInformationHeaders.Add(aktFIH);
 
 				// Neue Frame-ID ermitteln
 				frameID = _frameInformationenDaten.Count - 1;
@@ -1110,29 +1123,29 @@ namespace SLPLoader
 			{
 				// Frame laden
 				aktFID = _frameInformationenDaten[frameID];
-				aktFIH = _frameInformationenHeaders[frameID];
+				aktFIH = _frameInformationHeaders[frameID];
 			}
 
 			// Anker speichern
-			aktFIH.XAnker = ankerX;
-			aktFIH.YAnker = ankerY;
+			aktFIH.AnchorX = ankerX;
+			aktFIH.AnchorY = ankerY;
 
 			// Speichern der Abmessungen
-			aktFIH.Breite = (uint)width;
-			aktFIH.Höhe = (uint)height;
+			aktFIH.Width = (uint)width;
+			aktFIH.Height = (uint)height;
 
 			// RowEdge initialisieren
-			aktFID.BinaryRowEdge = new binaryRowedge[height];
+			aktFID.BinaryRowEdge = new BinaryRowedge[height];
 			for(int i = 0; i < height; i++)
 			{
-				aktFID.BinaryRowEdge[i] = new binaryRowedge();
+				aktFID.BinaryRowEdge[i] = new BinaryRowedge();
 			}
 
 			// Kommando-Offset-Array initalisieren
-			aktFID.KommandoTabelleOffsets = new uint[height];
+			aktFID.CommandTableOffsets = new uint[height];
 
 			// Kommando-Array initialisieren
-			aktFID.BinaryCommandTable = new List<binaryCommand>();
+			aktFID.BinaryCommandTable = new List<BinaryCommand>();
 
 			#endregion Grundlegenes und Initialisierungen
 
@@ -1141,7 +1154,7 @@ namespace SLPLoader
 			#region Umwandlung in umgesetzte Kommandodaten (Masken + Farbenindizes)
 
 			int[,] xCommandTable; // [Y, X] => Hilfsvariable für effizienteren Zugriff, enthält alle Palettenverweise des Bilds bzw. die negativen Masken-Pixel
-			aktFID.KommandoTabelle = new int[height, width];
+			aktFID.CommandTable = new int[height, width];
 			{
 				// Vordefinition, um Zeit zu sparen
 				Color aktC; // Bildpixel
@@ -1154,12 +1167,12 @@ namespace SLPLoader
 				{
 					for(int j = 0; j < width; j++)
 					{
-						aktFID.KommandoTabelle[i, j] = frameBitmap[j, i];
+						aktFID.CommandTable[i, j] = frameBitmap[j, i];
 					}
 				}
 
 				// Aus Effizienzgründen die umgewandelte Kommandotabelle in ein nahezu Objekt-freies int-Array kopieren (Direktzugriff ohne Umwege über unnötige OOP)
-				xCommandTable = (int[,])aktFID.KommandoTabelle.Clone();
+				xCommandTable = (int[,])aktFID.CommandTable.Clone();
 
 				// Berechnen der Masken
 
@@ -1363,7 +1376,7 @@ namespace SLPLoader
 				#endregion Maskenberechnung
 
 				// Kommandotabelle zwischenspeichern
-				aktFID.KommandoTabelle = (int[,])xCommandTable.Clone();
+				aktFID.CommandTable = (int[,])xCommandTable.Clone();
 			} // Ende Umwandlung in umgesetzte Kommandodaten
 
 			#endregion Umwandlung in umgesetzte Kommandodaten (Masken + Farbenindizes)
@@ -1402,7 +1415,7 @@ namespace SLPLoader
 				}
 
 				// Werte speichern
-				aktFID.BinaryRowEdge[y] = new binaryRowedge(left, right);
+				aktFID.BinaryRowEdge[y] = new BinaryRowedge(left, right);
 			}
 
 			#endregion Generierung der RowEdge-Daten
@@ -1567,11 +1580,11 @@ namespace SLPLoader
 			#endregion Erstellung der binären Ziel-Kommandotabelle
 
 			// Frame-Daten-Variablen speichern
-			_frameInformationenHeaders[frameID] = aktFIH;
+			_frameInformationHeaders[frameID] = aktFIH;
 			_frameInformationenDaten[frameID] = aktFID;
 
 			// Sicherheitshalber Frame-Anzahl im Header aktualisieren
-			_headers.Frameanzahl = (uint)_frameInformationenHeaders.Count;
+			_headers.FrameCount = (uint)_frameInformationHeaders.Count;
 
 			// Fertig: RowEdge-Daten und Kommandotabelle vollständig erstellt.
 		}
@@ -1585,21 +1598,21 @@ namespace SLPLoader
 		public void exportFrame(int frameID, string filename, Masks mask = Masks.Graphic)
 		{
 			// Framedaten abrufen
-			Strukturen.FrameInformationenHeader FIH = _frameInformationenHeaders[(int)frameID];
+			FrameInformationHeader FIH = _frameInformationHeaders[(int)frameID];
 
 			// Rückgabebild erstellen
-			BitmapLoader bmp = new BitmapLoader((int)FIH.Breite, (int)FIH.Höhe);
+			BitmapLoader bmp = new BitmapLoader((int)FIH.Width, (int)FIH.Height);
 
 			// Welche Maske ist gewollt?
 			if(mask == Masks.Graphic) // Es handelt sich um die reine Frame-Grafik
 			{
 				// Bild pixelweise durchgehen
-				for(int i = 0; i < FIH.Breite; i++)
+				for(int i = 0; i < FIH.Width; i++)
 				{
-					for(int j = 0; j < FIH.Höhe; j++)
+					for(int j = 0; j < FIH.Height; j++)
 					{
 						// Palettenindex abrufen
-						int farbID = _frameInformationenDaten[(int)frameID].KommandoTabelle[j, i];
+						int farbID = _frameInformationenDaten[(int)frameID].CommandTable[j, i];
 
 						// Sonderindizes in die jeweiligen Farben umsetzen; meist Rein-Weiß
 						switch(farbID)
@@ -1653,12 +1666,12 @@ namespace SLPLoader
 				}
 
 				// Bild pixelweise durchgehen
-				for(int i = 0; i < FIH.Breite; i++)
+				for(int i = 0; i < FIH.Width; i++)
 				{
-					for(int j = 0; j < FIH.Höhe; j++)
+					for(int j = 0; j < FIH.Height; j++)
 					{
 						// Palettenindex abrufen
-						int farbID = _frameInformationenDaten[(int)frameID].KommandoTabelle[j, i];
+						int farbID = _frameInformationenDaten[(int)frameID].CommandTable[j, i];
 
 						// Je nach Masken Farben setzen
 						if(farbID == maskIndex)
@@ -1680,12 +1693,12 @@ namespace SLPLoader
 			else // Spielerfarbe
 			{
 				// Bild pixelweise durchgehen
-				for(int i = 0; i < FIH.Breite; i++)
+				for(int i = 0; i < FIH.Width; i++)
 				{
-					for(int j = 0; j < FIH.Höhe; j++)
+					for(int j = 0; j < FIH.Height; j++)
 					{
 						// Palettenindex abrufen
-						int farbID = _frameInformationenDaten[(int)frameID].KommandoTabelle[j, i];
+						int farbID = _frameInformationenDaten[(int)frameID].CommandTable[j, i];
 
 						// Liegt keine Spielerfarbe vor?
 						if(farbID < 16 || farbID > 23)
@@ -1718,7 +1731,7 @@ namespace SLPLoader
 		{
 			get
 			{
-				return _headers.Frameanzahl;
+				return _headers.FrameCount;
 			}
 		}
 
@@ -1867,7 +1880,7 @@ namespace SLPLoader
 
 		#region Erstellung der binären Kommandotabelle
 
-		private void cmdTransp(ref Strukturen.FrameInformationenDaten fid, int length)
+		private void cmdTransp(ref FrameInformationData fid, int length)
 		{
 			// Bei Längen >= 64 das Array aufspalten
 			if(length >= 64)
@@ -1908,10 +1921,10 @@ namespace SLPLoader
 			}
 
 			// Kommando anfügen
-			fid.BinaryCommandTable.Add(new binaryCommand(command));
+			fid.BinaryCommandTable.Add(new BinaryCommand(command));
 		}
 
-		private void cmdColor(ref Strukturen.FrameInformationenDaten fid, byte[] array)
+		private void cmdColor(ref FrameInformationData fid, byte[] array)
 		{
 			// Array-Länge bestimmen
 			int length = array.Length;
@@ -1962,10 +1975,10 @@ namespace SLPLoader
 			byte command = (byte)(length << 2);
 
 			// Kommando der Auflistung hinzufügen
-			fid.BinaryCommandTable.Add(new binaryCommand(command, array));
+			fid.BinaryCommandTable.Add(new BinaryCommand(command, array));
 		}
 
-		private void cmdPlayerColor(ref Strukturen.FrameInformationenDaten fid, byte[] array)
+		private void cmdPlayerColor(ref FrameInformationData fid, byte[] array)
 		{
 			// Das Kommandobyte ist schon bekannt
 			byte command = 0x06;
@@ -2028,10 +2041,10 @@ namespace SLPLoader
 			}
 
 			// Kommando erstellen
-			fid.BinaryCommandTable.Add(new binaryCommand(command, nextByte, array2));
+			fid.BinaryCommandTable.Add(new BinaryCommand(command, nextByte, array2));
 		}
 
-		private void cmdColorBlock(ref Strukturen.FrameInformationenDaten fid, byte[] array, bool usePlayerColor)
+		private void cmdColorBlock(ref FrameInformationData fid, byte[] array, bool usePlayerColor)
 		{
 			// Länge der Daten
 			int aLength = array.Length;
@@ -2137,7 +2150,7 @@ namespace SLPLoader
 			}
 		}
 
-		private void cmdOutline1(ref Strukturen.FrameInformationenDaten fid, int length)
+		private void cmdOutline1(ref FrameInformationData fid, int length)
 		{
 			// Das Kommandobyte
 			byte command;
@@ -2147,18 +2160,18 @@ namespace SLPLoader
 			{
 				// Einfacher Umriss-Pixel
 				command = 0x4E;
-				fid.BinaryCommandTable.Add(new binaryCommand(command));
+				fid.BinaryCommandTable.Add(new BinaryCommand(command));
 			}
 			else
 			{
 				// Block
 				command = 0x5E;
 				byte nextByte = (byte)length;
-				fid.BinaryCommandTable.Add(new binaryCommand(command, nextByte));
+				fid.BinaryCommandTable.Add(new BinaryCommand(command, nextByte));
 			}
 		}
 
-		private void cmdOutline2(ref Strukturen.FrameInformationenDaten fid, int length)
+		private void cmdOutline2(ref FrameInformationData fid, int length)
 		{
 			// Das Kommandobyte
 			byte command;
@@ -2168,18 +2181,18 @@ namespace SLPLoader
 			{
 				// Einfacher Umriss-Pixel
 				command = 0x6E;
-				fid.BinaryCommandTable.Add(new binaryCommand(command));
+				fid.BinaryCommandTable.Add(new BinaryCommand(command));
 			}
 			else
 			{
 				// Block
 				command = 0x7E;
 				byte nextByte = (byte)length;
-				fid.BinaryCommandTable.Add(new binaryCommand(command, nextByte));
+				fid.BinaryCommandTable.Add(new BinaryCommand(command, nextByte));
 			}
 		}
 
-		private void cmdShadow(ref Strukturen.FrameInformationenDaten fid, int length)
+		private void cmdShadow(ref FrameInformationData fid, int length)
 		{
 			// Das Kommandobyte
 			byte command = 0x0B;
@@ -2216,23 +2229,23 @@ namespace SLPLoader
 			byte nextByte = (byte)length;
 
 			// Kommando anfügen
-			fid.BinaryCommandTable.Add(new binaryCommand(command, nextByte));
+			fid.BinaryCommandTable.Add(new BinaryCommand(command, nextByte));
 		}
 
-		private void cmdEOL(ref Strukturen.FrameInformationenDaten fid)
+		private void cmdEOL(ref FrameInformationData fid)
 		{
 			// Das Kommandobyte
 			byte command = 0x0F;
 
 			// Kommando anfügen
-			fid.BinaryCommandTable.Add(new binaryCommand(command));
+			fid.BinaryCommandTable.Add(new BinaryCommand(command));
 		}
 
 		#endregion Erstellung der binären Kommandotabelle
 
 		#region Berechnungen auf der binären Kommandotabelle
 
-		private void computeCmdBytes(ref Strukturen.FrameInformationenDaten fid, ref int destCommandFullLength)
+		private void computeCmdBytes(ref FrameInformationData fid, ref int destCommandFullLength)
 		{
 			// Gesamtzahl der Kommandos und die Gesamt-Kommandolänge berechnen
 			int total = 0;
@@ -2245,7 +2258,7 @@ namespace SLPLoader
 			destCommandFullLength = total;
 		}
 
-		private int cmdByteLengthInLine(ref Strukturen.FrameInformationenDaten fid, int line)
+		private int cmdByteLengthInLine(ref FrameInformationData fid, int line)
 		{
 			// Positionsvariablen
 			int aktLine = 0;
@@ -2283,23 +2296,94 @@ namespace SLPLoader
 
 		#endregion Hilfsfunktionen
 
-		#region Hilfsstrukturen und Hilfsklassen
+		#region 
+
+		public struct Header
+		{
+			/// <summary>
+			/// Die Version der SLP. Länge: 4
+			/// </summary>
+			/// <remarks></remarks>
+			public string Version;
+
+			/// <summary>
+			/// Die Anzahl der Frames.
+			/// </summary>
+			/// <remarks></remarks>
+			public uint FrameCount;
+
+			/// <summary>
+			/// Ein Kommentar-String der Länge 24.
+			/// </summary>
+			/// <remarks></remarks>
+			public string Comment;
+		}
+
+		public struct FrameInformationHeader
+		{
+			public uint FrameCommandsOffset;
+			public uint FrameOutlineOffset;
+			public uint PaletteOffset;
+			public uint Properties;
+			public uint Width;
+			public uint Height;
+			public int AnchorX;
+			public int AnchorY;
+		}
+
+		public struct FrameInformationData
+		{
+			/// <summary>
+			/// Größe: FIH-&gt;Höhe, 2.
+			/// </summary>
+			/// <remarks></remarks>
+			public ushort[,] RowEdge;
+
+			/// <summary>
+			/// Größe: FIH-&gt;Höhe.
+			/// </summary>
+			/// <remarks></remarks>
+			public uint[] CommandTableOffsets;
+
+			/// <summary>
+			/// Enthält die umgesetzten Kommandodaten des Frames.
+			/// Größe: FIH-&gt;Höhe, FIH-&gt;Breite.
+			/// </summary>
+			/// <remarks></remarks>
+			public int[,] CommandTable;
+
+			/// <summary>
+			/// Die Original-RowEdge-Daten (für den Speichervorgang).
+			/// Größe: FIH-&gt;Höhe, 2.
+			/// </summary>
+			/// <remarks></remarks>
+			public SLPFile.BinaryRowedge[] BinaryRowEdge;
+
+			/// <summary>
+			/// Die später geschriebene Kommando-Tabelle mit den Kommando-Bytes (für den Speichervorgang).
+			/// </summary>
+			public List<SLPFile.BinaryCommand> BinaryCommandTable;
+		}
+
+		#endregion
+
+		#region Hilfsklassen
 
 		/// <summary>
 		/// Repräsentiert eine Umriss-Eigenschaft.
 		/// </summary>
-		public class binaryRowedge
+		public class BinaryRowedge
 		{
 			public int _left;
 			public int _right;
 
-			public binaryRowedge()
+			public BinaryRowedge()
 			{
 				_left = 0;
 				_right = 0;
 			}
 
-			public binaryRowedge(int l, int r)
+			public BinaryRowedge(int l, int r)
 			{
 				_left = l;
 				_right = r;
@@ -2309,7 +2393,7 @@ namespace SLPLoader
 		/// <summary>
 		/// Repräsentiert ein Kommando.
 		/// </summary>
-		public class binaryCommand
+		public class BinaryCommand
 		{
 			/// <summary>
 			/// Das Kommando-Byte.
@@ -2337,7 +2421,7 @@ namespace SLPLoader
 			/// Definiert ein Kommando ohne Daten.
 			/// </summary>
 			/// <param name="b">Das Kommando-Byte.</param>
-			public binaryCommand(byte b)
+			public BinaryCommand(byte b)
 			{
 				_cmdbyte = b;
 				_nextByte = 0;
@@ -2350,7 +2434,7 @@ namespace SLPLoader
 			/// </summary>
 			/// <param name="b">Das Kommando-Byte.</param>
 			/// <param name="n">Das nachfolgende Byte.</param>
-			public binaryCommand(byte b, byte n)
+			public BinaryCommand(byte b, byte n)
 			{
 				_cmdbyte = b;
 				_nextByte = n;
@@ -2363,7 +2447,7 @@ namespace SLPLoader
 			/// </summary>
 			/// <param name="b">Das Kommando-Byte.</param>
 			/// <param name="d">Die Daten.</param>
-			public binaryCommand(byte b, byte[] d)
+			public BinaryCommand(byte b, byte[] d)
 			{
 				_cmdbyte = b;
 				_nextByte = 0;
@@ -2377,7 +2461,7 @@ namespace SLPLoader
 			/// <param name="b">Das Kommando-Byte.</param>
 			/// <param name="n">Das nachfolgende Byte.</param>
 			/// <param name="d">Die Daten.</param>
-			public binaryCommand(byte b, byte n, byte[] d)
+			public BinaryCommand(byte b, byte n, byte[] d)
 			{
 				_cmdbyte = b;
 				_nextByte = n;
@@ -2416,7 +2500,7 @@ namespace SLPLoader
 			}
 		}
 
-		#endregion Hilfsstrukturen und Hilfsklassen
+		#endregion Hilfsund Hilfsklassen
 
 		#region Enumerationen
 
