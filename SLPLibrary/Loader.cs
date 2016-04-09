@@ -58,7 +58,7 @@ namespace SLPLoader
 		private const byte _outline2 = 124; // -3
 		private const byte _schatten = 131;  // -4
 
-		#endregion
+		#endregion Variablen
 
 		#region Funktionen
 
@@ -2296,7 +2296,7 @@ namespace SLPLoader
 
 		#endregion Hilfsfunktionen
 
-		#region 
+		#region
 
 		public struct Header
 		{
