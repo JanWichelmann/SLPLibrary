@@ -65,28 +65,28 @@ namespace SLPLoader
 		/// <summary>
 		/// Lädt eine angegebene SLP-Datei.
 		/// </summary>
-		/// <param name="Data">Eine Instanz der PufferKlasse-Klasse mit den SLP-Daten.</param>
+		/// <param name="data">Ein Puffer mit den SLP-Daten. Die Leseposition wird entsprechend der Datenlänge erhöht.</param>
 		/// <remarks></remarks>
-		public SLPFile(RAMBuffer Data)
+		public SLPFile(RAMBuffer data)
 		{
-			_dataBuffer = Data;
-			_dataBuffer.Position = 0;
-			loadData();
+			_dataBuffer = new RAMBuffer();
+			loadData(data);
 		}
 
 		/// <summary>
 		/// Lädt die SLP-Daten.
 		/// </summary>
+		/// <param name="buffer">Ein Puffer mit den SLP-Daten. Die Leseposition wird entsprechend der Datenlänge erhöht.</param>
 		/// <remarks></remarks>
-		private void loadData()
+		private void loadData(RAMBuffer buffer)
 		{
 			// Header
 
 			#region SLP-Header
 
-			_headers.Version = _dataBuffer.ReadString(4);
-			_headers.FrameCount = ReadUInteger();
-			_headers.Comment = _dataBuffer.ReadString(24);
+			_headers.Version = buffer.ReadString(4);
+			_headers.FrameCount = buffer.ReadUInteger();
+			_headers.Comment = buffer.ReadString(24);
 
 			#endregion SLP-Header
 
@@ -100,24 +100,24 @@ namespace SLPLoader
 				FrameInformationHeader aktFIH = new FrameInformationHeader();
 
 				// Der Zeichenindex in der SLP-Datei, an dem die Kommandotabelle des Frames beginnt
-				aktFIH.FrameCommandsOffset = ReadUInteger();
+				aktFIH.FrameCommandsOffset = buffer.ReadUInteger();
 
 				// Der Zeichenindex in der SLP-Datei, an dem die Umrissdaten (RowEdge) des Frames gespeichert sind
-				aktFIH.FrameOutlineOffset = ReadUInteger();
+				aktFIH.FrameOutlineOffset = buffer.ReadUInteger();
 
 				// Der Zeichenindex in der SLP-Datei, an dem die Farbpalette des Frames definiert ist; Genaueres ist nicht bekannt
-				aktFIH.PaletteOffset = ReadUInteger();
+				aktFIH.PaletteOffset = buffer.ReadUInteger();
 
 				// Die Frame-Eigenschaften; die Bedeutung dieses Werts ist unbekannt
-				aktFIH.Properties = ReadUInteger();
+				aktFIH.Properties = buffer.ReadUInteger();
 
 				// Die Abmessungen des Frames
-				aktFIH.Width = ReadUInteger();
-				aktFIH.Height = ReadUInteger();
+				aktFIH.Width = buffer.ReadUInteger();
+				aktFIH.Height = buffer.ReadUInteger();
 
 				// Die Anker (Mittelpunkt) des Frames
-				aktFIH.AnchorX = ReadInteger();
-				aktFIH.AnchorY = ReadInteger();
+				aktFIH.AnchorX = buffer.ReadInteger();
+				aktFIH.AnchorY = buffer.ReadInteger();
 
 				// Frame-Header in die zentrale Liste schreiben
 				_frameInformationHeaders.Add(aktFIH);
@@ -158,8 +158,8 @@ namespace SLPLoader
 				for(int j = 0; j < aktFIH.Height; j++)
 				{
 					// Werte einlesen
-					ushort left = ReadUShort(); // Links
-					ushort right = ReadUShort(); // Rechts
+					ushort left = buffer.ReadUShort(); // Links
+					ushort right = buffer.ReadUShort(); // Rechts
 
 					// Evtl. falsche Werte korrigieren
 					{
@@ -193,7 +193,7 @@ namespace SLPLoader
 				aktFID.CommandTableOffsets = new uint[aktFIH.Height];
 				for(int j = 0; j < aktFIH.Height; j++)
 				{
-					aktFID.CommandTableOffsets[j] = ReadUInteger();
+					aktFID.CommandTableOffsets[j] = buffer.ReadUInteger();
 				}
 
 				#endregion Kommandotabellen-Offsets
@@ -226,7 +226,7 @@ namespace SLPLoader
 					while(Weiter)
 					{
 						// Das aktuelle Kommandobyte
-						byte aktKommandoByte = ReadByte();
+						byte aktKommandoByte = buffer.ReadByte();
 
 						// Das aktuelle Kommando (die ersten vier Bits des Kommandobytes) Wird berechnet, um das oft mit der Datenlänge korrelierte Kommandobyte bestimmen zu können (es müssen nur die Werte 0 bis 15 abgefragt werden, statt eigentlich 0 bis 255; weiterhin geben immer die ersten 2 oder 4 Bits das Kommando an, die anderen 4 oder 6 meist nur die jeweilige Länge)
 						byte aktKommando = (byte)(aktKommandoByte & 0x0F);
@@ -244,7 +244,7 @@ namespace SLPLoader
 									int len = aktKommandoByte >> 2;
 
 									// Daten einlesen
-									byte[] dat = ReadBytes(len);
+									byte[] dat = buffer.ReadByteArray(len);
 
 									// Daten in die Kommandotabelle schreiben
 									for(int k = 0; k < len; k++)
@@ -292,13 +292,13 @@ namespace SLPLoader
 							case 0x02:
 								{
 									// Hilfs-Kommandobyte auslesen
-									byte byte2 = ReadByte();
+									byte byte2 = buffer.ReadByte();
 
 									// Länge ermitteln
 									int len = ((aktKommandoByte & 0xF0) << 4) + byte2;
 
 									// Daten einlesen
-									byte[] dat = ReadBytes(len);
+									byte[] dat = buffer.ReadByteArray(len);
 
 									// Daten in die Kommandotabelle schreiben
 									for(int k = 0; k < len; k++)
@@ -319,7 +319,7 @@ namespace SLPLoader
 							case 0x03:
 								{
 									// Hilfs-Kommandobyte auslesen
-									byte byte2 = ReadByte();
+									byte byte2 = buffer.ReadByte();
 
 									// Länge ermitteln
 									int len = ((aktKommandoByte & 0xF0) << 4) + byte2;
@@ -354,7 +354,7 @@ namespace SLPLoader
 									// Die oberen 4 Bits sind 0, wenn die Länge im nächsten Byte angegeben ist; ansonsten werden diese um 4 nach rechts verschoben und sind somit als Längenangabe verwendbar
 									if(next4Bits == 0)
 									{
-										len = ReadByte();
+										len = buffer.ReadByte();
 									}
 									else
 									{
@@ -362,7 +362,7 @@ namespace SLPLoader
 									}
 
 									// Daten auslesen
-									byte[] dat = ReadBytes(len);
+									byte[] dat = buffer.ReadByteArray(len);
 
 									// Daten durchgehen
 									for(int k = 0; k < len; k++)
@@ -404,7 +404,7 @@ namespace SLPLoader
 									// Die oberen 4 Bits sind 0, wenn die Länge im nächsten Byte angegeben ist; ansonsten werden diese um 4 nach rechts verschoben und sind somit als Längenangabe verwendbar
 									if(next4Bits == 0)
 									{
-										len = ReadByte();
+										len = buffer.ReadByte();
 									}
 									else
 									{
@@ -412,7 +412,7 @@ namespace SLPLoader
 									}
 
 									// Das nächste Byte gibt die Farbe an
-									byte farbe = ReadByte();
+									byte farbe = buffer.ReadByte();
 
 									// Hilfsvariable für das Binary-Schreiben
 									byte[] dat = new byte[len];
@@ -448,7 +448,7 @@ namespace SLPLoader
 									// Die oberen 4 Bits sind 0, wenn die Länge im nächsten Byte angegeben ist; ansonsten werden diese um 4 nach rechts verschoben und sind somit als Längenangabe verwendbar
 									if(next4Bits == 0)
 									{
-										len = ReadByte();
+										len = buffer.ReadByte();
 									}
 									else
 									{
@@ -456,7 +456,7 @@ namespace SLPLoader
 									}
 
 									// Das nächste Byte gibt die Grundfarbe an
-									byte farbe = ReadByte();
+									byte farbe = buffer.ReadByte();
 
 									// Hilfsvariable für das Binary-Schreiben
 									byte[] dat = new byte[len];
@@ -501,7 +501,7 @@ namespace SLPLoader
 									// Die oberen 4 Bits sind 0, wenn die Länge im nächsten Byte angegeben ist; ansonsten werden diese um 4 nach rechts verschoben und sind somit als Längenangabe verwendbar
 									if(next4Bits == 0)
 									{
-										len = ReadByte();
+										len = buffer.ReadByte();
 									}
 									else
 									{
@@ -572,7 +572,7 @@ namespace SLPLoader
 										case 0x5E:
 											{
 												// Blocklänge abrufen
-												int len = ReadByte();
+												int len = buffer.ReadByte();
 
 												// Outlinepixel in der angegebenen Anzahl auf das Bild schreiben
 												for(int k = 0; k < len; k++)
@@ -596,7 +596,7 @@ namespace SLPLoader
 										case 0x7E:
 											{
 												// Blocklänge abrufen
-												int len = ReadByte();
+												int len = buffer.ReadByte();
 
 												// Outlinepixel in der angegebenen Anzahl auf das Bild schreiben
 												for(int k = 0; k < len; k++)
@@ -1741,61 +1741,6 @@ namespace SLPLoader
 
 		// Die folgenden Funktionen sind Abkürzungen, in C++ wären dies Makros.
 
-		#region Lesen
-
-		/// <summary>
-		/// Gibt genau ein Byte aus DataBuffer zurück.
-		/// </summary>
-		/// <returns></returns>
-		/// <remarks></remarks>
-		private byte ReadByte()
-		{
-			return _dataBuffer.ReadByte();
-		}
-
-		/// <summary>
-		/// Gibt ein Byte-Array aus DataBuffer zurück.
-		/// </summary>
-		/// <param name="count">Die Anzahl der auszulesenden Bytes.</param>
-		/// <returns></returns>
-		/// <remarks></remarks>
-		private byte[] ReadBytes(int count)
-		{
-			return _dataBuffer.ReadByteArray(count);
-		}
-
-		/// <summary>
-		/// Gibt genau einen UShort-Wert aus DataBuffer zurück.
-		/// </summary>
-		/// <returns></returns>
-		/// <remarks></remarks>
-		private ushort ReadUShort()
-		{
-			return _dataBuffer.ReadUShort();
-		}
-
-		/// <summary>
-		/// Gibt genau einen Integer-Wert aus DataBuffer zurück.
-		/// </summary>
-		/// <returns></returns>
-		/// <remarks></remarks>
-		private int ReadInteger()
-		{
-			return _dataBuffer.ReadInteger();
-		}
-
-		/// <summary>
-		/// Gibt genau einen UInteger-Wert aus DataBuffer zurück.
-		/// </summary>
-		/// <returns></returns>
-		/// <remarks></remarks>
-		private uint ReadUInteger()
-		{
-			return _dataBuffer.ReadUInteger();
-		}
-
-		#endregion Lesen
-
 		#region Schreiben
 
 		/// <summary>
@@ -2296,9 +2241,9 @@ namespace SLPLoader
 
 		#endregion Hilfsfunktionen
 
-		#region
+		#region Hilfsklassen
 
-		public struct Header
+		public class Header
 		{
 			/// <summary>
 			/// Die Version der SLP. Länge: 4
@@ -2319,7 +2264,7 @@ namespace SLPLoader
 			public string Comment;
 		}
 
-		public struct FrameInformationHeader
+		public class FrameInformationHeader
 		{
 			public uint FrameCommandsOffset;
 			public uint FrameOutlineOffset;
@@ -2331,7 +2276,7 @@ namespace SLPLoader
 			public int AnchorY;
 		}
 
-		public struct FrameInformationData
+		public class FrameInformationData
 		{
 			/// <summary>
 			/// Größe: FIH-&gt;Höhe, 2.
@@ -2364,10 +2309,6 @@ namespace SLPLoader
 			/// </summary>
 			public List<SLPFile.BinaryCommand> BinaryCommandTable;
 		}
-
-		#endregion
-
-		#region Hilfsklassen
 
 		/// <summary>
 		/// Repräsentiert eine Umriss-Eigenschaft.

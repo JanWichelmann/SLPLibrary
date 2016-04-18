@@ -39,13 +39,14 @@
             <summary>
             Lädt eine angegebene SLP-Datei.
             </summary>
-            <param name="Data">Eine Instanz der PufferKlasse-Klasse mit den SLP-Daten.</param>
+            <param name="data">Ein Puffer mit den SLP-Daten. Die Leseposition wird entsprechend der Datenlänge erhöht.</param>
             <remarks></remarks>
         </member>
-        <member name="M:SLPLoader.SLPFile.loadData">
+        <member name="M:SLPLoader.SLPFile.loadData(IORAMHelper.RAMBuffer)">
             <summary>
             Lädt die SLP-Daten.
             </summary>
+            <param name="buffer">Ein Puffer mit den SLP-Daten. Die Leseposition wird entsprechend der Datenlänge erhöht.</param>
             <remarks></remarks>
         </member>
         <member name="M:SLPLoader.SLPFile.writeData">
@@ -98,42 +99,6 @@
             Gibt die Anzahl der Frames zurück.
             </summary>
             <value></value>
-            <returns></returns>
-            <remarks></remarks>
-        </member>
-        <member name="M:SLPLoader.SLPFile.ReadByte">
-            <summary>
-            Gibt genau ein Byte aus DataBuffer zurück.
-            </summary>
-            <returns></returns>
-            <remarks></remarks>
-        </member>
-        <member name="M:SLPLoader.SLPFile.ReadBytes(System.Int32)">
-            <summary>
-            Gibt ein Byte-Array aus DataBuffer zurück.
-            </summary>
-            <param name="count">Die Anzahl der auszulesenden Bytes.</param>
-            <returns></returns>
-            <remarks></remarks>
-        </member>
-        <member name="M:SLPLoader.SLPFile.ReadUShort">
-            <summary>
-            Gibt genau einen UShort-Wert aus DataBuffer zurück.
-            </summary>
-            <returns></returns>
-            <remarks></remarks>
-        </member>
-        <member name="M:SLPLoader.SLPFile.ReadInteger">
-            <summary>
-            Gibt genau einen Integer-Wert aus DataBuffer zurück.
-            </summary>
-            <returns></returns>
-            <remarks></remarks>
-        </member>
-        <member name="M:SLPLoader.SLPFile.ReadUInteger">
-            <summary>
-            Gibt genau einen UInteger-Wert aus DataBuffer zurück.
-            </summary>
             <returns></returns>
             <remarks></remarks>
         </member>
