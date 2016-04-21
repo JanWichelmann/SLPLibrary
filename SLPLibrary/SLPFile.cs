@@ -17,12 +17,6 @@ namespace SLPLoader
 		#region Variablen
 
 		/// <summary>
-		/// Definiert die ID der enthaltenen SLP-Datei.
-		/// </summary>
-		/// <remarks></remarks>
-		private ushort _resourceID;
-
-		/// <summary>
 		/// Die SLP-Datei.
 		/// </summary>
 		/// <remarks></remarks>
@@ -49,7 +43,7 @@ namespace SLPLoader
 
 		public Header _headers = new Header();
 		public List<FrameInformationHeader> _frameInformationHeaders = new List<FrameInformationHeader>();
-		public List<FrameInformationData> _frameInformationenDaten = new List<FrameInformationData>();
+		public List<FrameInformationData> _frameInformationData = new List<FrameInformationData>();
 
 		// Umgesetzte Befehlswerte. Übernommen vom Mod Workshop.
 		private const byte _maske = 0; // -1
@@ -644,7 +638,7 @@ namespace SLPLoader
 				#endregion Kommandotabelle
 
 				// Framedaten zur zentralen Liste hinzufügen
-				_frameInformationenDaten.Add(aktFID);
+				_frameInformationData.Add(aktFID);
 			} // Ende for: Frame für Frame
 
 			// Einstellungen speichern
@@ -698,7 +692,7 @@ namespace SLPLoader
 				pointer += aktFIH.Height * 4;
 
 				// Berechnung der Kommando-Offsets
-				FrameInformationData aktFID = _frameInformationenDaten[i];
+				FrameInformationData aktFID = _frameInformationData[i];
 
 				// Offsets der Kommandotabelle berechnen
 				for(int j = 0; j < aktFIH.Height; j++)
@@ -712,7 +706,7 @@ namespace SLPLoader
 
 				// FIH und FID speichern
 				_frameInformationHeaders[i] = aktFIH;
-				_frameInformationenDaten[i] = aktFID;
+				_frameInformationData[i] = aktFID;
 			}
 
 			#endregion Berechnungen zu den einzelnen Frames
@@ -752,7 +746,7 @@ namespace SLPLoader
 			for(int i = 0; i < _headers.FrameCount; i++)
 			{
 				FrameInformationHeader aktFIH = _frameInformationHeaders[i];
-				FrameInformationData aktFID = _frameInformationenDaten[i];
+				FrameInformationData aktFID = _frameInformationData[i];
 
 				// RowEdge
 				for(int j = 0; j < aktFIH.Height; j++)
@@ -826,7 +820,7 @@ namespace SLPLoader
 		{
 			// Framedaten abrufen
 			FrameInformationHeader frameHeader = _frameInformationHeaders[(int)frameID];
-			FrameInformationData frameData = _frameInformationenDaten[(int)frameID];
+			FrameInformationData frameData = _frameInformationData[(int)frameID];
 
 			// Rückgabebild erstellen
 			Bitmap ret = new Bitmap((int)frameHeader.Width, (int)frameHeader.Height);
@@ -911,7 +905,7 @@ namespace SLPLoader
 					for(int j = 0; j < frameHeader.Height; j++)
 					{
 						// Palettenindex abrufen
-						int farbID = _frameInformationenDaten[(int)frameID].CommandTable[j, i];
+						int farbID = _frameInformationData[(int)frameID].CommandTable[j, i];
 
 						// Je nach Masken Farben setzen
 						if(farbID == maskIndex)
@@ -938,7 +932,7 @@ namespace SLPLoader
 					for(int j = 0; j < frameHeader.Height; j++)
 					{
 						// Palettenindex abrufen
-						int farbID = _frameInformationenDaten[(int)frameID].CommandTable[j, i];
+						int farbID = _frameInformationData[(int)frameID].CommandTable[j, i];
 
 						// Liegt keine Spielerfarbe vor?
 						if(farbID < 16 || farbID > 23)
@@ -981,7 +975,7 @@ namespace SLPLoader
 					for(int j = 0; j < FIH.Height; j++)
 					{
 						// Palettenindex abrufen
-						int farbID = _frameInformationenDaten[(int)frameID].CommandTable[j, i];
+						int farbID = _frameInformationData[(int)frameID].CommandTable[j, i];
 
 						// Sonderindizes in die jeweiligen Farben umsetzen; meist Rein-Weiß
 						switch(farbID)
@@ -1040,7 +1034,7 @@ namespace SLPLoader
 					for(int j = 0; j < FIH.Height; j++)
 					{
 						// Palettenindex abrufen
-						int farbID = _frameInformationenDaten[(int)frameID].CommandTable[j, i];
+						int farbID = _frameInformationData[(int)frameID].CommandTable[j, i];
 
 						// Je nach Masken Farben setzen
 						if(farbID == maskIndex)
@@ -1067,7 +1061,7 @@ namespace SLPLoader
 					for(int j = 0; j < FIH.Height; j++)
 					{
 						// Palettenindex abrufen
-						int farbID = _frameInformationenDaten[(int)frameID].CommandTable[j, i];
+						int farbID = _frameInformationData[(int)frameID].CommandTable[j, i];
 
 						// Liegt keine Spielerfarbe vor?
 						if(farbID < 16 || farbID > 23)
@@ -1108,21 +1102,21 @@ namespace SLPLoader
 			FrameInformationHeader aktFIH;
 
 			// Neuer Frame?
-			if(frameID < 0 || frameID >= _frameInformationenDaten.Count)
+			if(frameID < 0 || frameID >= _frameInformationData.Count)
 			{
 				// Neue Framedaten erstellen
 				aktFID = new FrameInformationData();
-				_frameInformationenDaten.Add(aktFID);
+				_frameInformationData.Add(aktFID);
 				aktFIH = new FrameInformationHeader();
 				_frameInformationHeaders.Add(aktFIH);
 
 				// Neue Frame-ID ermitteln
-				frameID = _frameInformationenDaten.Count - 1;
+				frameID = _frameInformationData.Count - 1;
 			}
 			else
 			{
 				// Frame laden
-				aktFID = _frameInformationenDaten[frameID];
+				aktFID = _frameInformationData[frameID];
 				aktFIH = _frameInformationHeaders[frameID];
 			}
 
@@ -1156,12 +1150,6 @@ namespace SLPLoader
 			int[,] xCommandTable; // [Y, X] => Hilfsvariable für effizienteren Zugriff, enthält alle Palettenverweise des Bilds bzw. die negativen Masken-Pixel
 			aktFID.CommandTable = new int[height, width];
 			{
-				// Vordefinition, um Zeit zu sparen
-				Color aktC; // Bildpixel
-				Color aktPC; // Palettenfarbe
-				double temp; // Abstand
-				double distance; // Größtmöglicher Farbabstand / aktuell nächster Farbabstand
-
 				// Bildindizes (Daten) in die umgesetzte Kommandotabelle schreiben
 				for(int i = 0; i < height; i++)
 				{
@@ -1581,7 +1569,7 @@ namespace SLPLoader
 
 			// Frame-Daten-Variablen speichern
 			_frameInformationHeaders[frameID] = aktFIH;
-			_frameInformationenDaten[frameID] = aktFID;
+			_frameInformationData[frameID] = aktFID;
 
 			// Sicherheitshalber Frame-Anzahl im Header aktualisieren
 			_headers.FrameCount = (uint)_frameInformationHeaders.Count;
@@ -1612,7 +1600,7 @@ namespace SLPLoader
 					for(int j = 0; j < FIH.Height; j++)
 					{
 						// Palettenindex abrufen
-						int farbID = _frameInformationenDaten[(int)frameID].CommandTable[j, i];
+						int farbID = _frameInformationData[(int)frameID].CommandTable[j, i];
 
 						// Sonderindizes in die jeweiligen Farben umsetzen; meist Rein-Weiß
 						switch(farbID)
@@ -1671,7 +1659,7 @@ namespace SLPLoader
 					for(int j = 0; j < FIH.Height; j++)
 					{
 						// Palettenindex abrufen
-						int farbID = _frameInformationenDaten[(int)frameID].CommandTable[j, i];
+						int farbID = _frameInformationData[(int)frameID].CommandTable[j, i];
 
 						// Je nach Masken Farben setzen
 						if(farbID == maskIndex)
@@ -1698,7 +1686,7 @@ namespace SLPLoader
 					for(int j = 0; j < FIH.Height; j++)
 					{
 						// Palettenindex abrufen
-						int farbID = _frameInformationenDaten[(int)frameID].CommandTable[j, i];
+						int farbID = _frameInformationData[(int)frameID].CommandTable[j, i];
 
 						// Liegt keine Spielerfarbe vor?
 						if(farbID < 16 || farbID > 23)
@@ -1807,12 +1795,12 @@ namespace SLPLoader
 		/// Schreibt eine Zeichenfolge in den Puffer und hängt eine binäre Null dahinter, falls dort keine stehen sollte.
 		/// </summary>
 		/// <param name="value">Die zu schreibende Zeichenfolge.</param>
-		/// <param name="SollLänge">Legt die Länge des Strings fest. Nicht belegte Zeichen werden mit 0-Bytes ergänzt.</param>
+		/// <param name="length">Legt die Länge des Strings fest. Nicht belegte Zeichen werden mit 0-Bytes ergänzt.</param>
 		/// <remarks></remarks>
-		private void WriteString(string value, int sollLänge)
+		private void WriteString(string value, int length)
 		{
 			// Byte-Array mit der gewünschten Stringlänge erstellen
-			byte[] zuSchreiben = new byte[sollLänge];
+			byte[] zuSchreiben = new byte[length];
 
 			// Zeichenfolge in Byte-Array schreiben
 			zuSchreiben = System.Text.Encoding.Default.GetBytes(value);

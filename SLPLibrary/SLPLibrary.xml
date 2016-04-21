@@ -10,12 +10,6 @@
             </summary>
             <remarks></remarks>
         </member>
-        <member name="F:SLPLoader.SLPFile._resourceID">
-            <summary>
-            Definiert die ID der enthaltenen SLP-Datei.
-            </summary>
-            <remarks></remarks>
-        </member>
         <member name="F:SLPLoader.SLPFile._dataBuffer">
             <summary>
             Die SLP-Datei.
@@ -149,7 +143,7 @@
             Schreibt eine Zeichenfolge in den Puffer und hängt eine binäre Null dahinter, falls dort keine stehen sollte.
             </summary>
             <param name="value">Die zu schreibende Zeichenfolge.</param>
-            <param name="SollLänge">Legt die Länge des Strings fest. Nicht belegte Zeichen werden mit 0-Bytes ergänzt.</param>
+            <param name="length">Legt die Länge des Strings fest. Nicht belegte Zeichen werden mit 0-Bytes ergänzt.</param>
             <remarks></remarks>
         </member>
         <member name="F:SLPLoader.SLPFile.Header.Version">
