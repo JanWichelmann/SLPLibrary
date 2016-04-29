@@ -6,6 +6,7 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.Linq;
 
+#pragma warning disable CS1591 // TODO
 namespace SLPLoader
 {
 	/// <summary>
