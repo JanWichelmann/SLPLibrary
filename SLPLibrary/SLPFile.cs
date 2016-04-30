@@ -662,19 +662,17 @@ namespace SLPLoader
 
 			// Header
 			WriteString(_headers.Version, 4);
-			WriteUInteger((uint)_frameInformationHeaders.Count());
+			_headers.FrameCount = (uint)_frameInformationHeaders.Count();
+			WriteUInteger(_headers.FrameCount);
 			WriteString(_headers.Comment, 24);
 
 			#region Berechnungen zu den einzelnen Frames
 
-			// Anzahl der Frames ermitteln
-			uint anzahlFrames = (uint)_frameInformationHeaders.Count();
-
 			// Offset der ersten RowEdge-Definition (SLP-Header: 32 Byte; Frame-Header: 32 Byte pro Frame)
-			uint pointer = 32 + 32 * anzahlFrames;
+			uint pointer = 32 + 32 * _headers.FrameCount;
 
 			// Offsets berechnen
-			for(int i = 0; i < anzahlFrames; i++)
+			for(int i = 0; i < _headers.FrameCount; i++)
 			{
 				// Aktuelle Frameheader abrufen
 				FrameInformationHeader aktFIH = _frameInformationHeaders[i];
@@ -715,7 +713,7 @@ namespace SLPLoader
 
 			#region Frameheader schreiben
 
-			for(int i = 0; i < anzahlFrames; i++)
+			for(int i = 0; i < _headers.FrameCount; i++)
 			{
 				// Aktuelle Frameheader abrufen
 				FrameInformationHeader aktFIH = _frameInformationHeaders[i];
