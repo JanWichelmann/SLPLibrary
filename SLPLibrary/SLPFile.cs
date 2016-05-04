@@ -1408,163 +1408,7 @@ namespace SLPLoader
 			#endregion Generierung der RowEdge-Daten
 
 			// Ziel-Kommando-Tabelle erstellen
-
-			#region Erstellung der binären Ziel-Kommandotabelle
-
-			{
-				// Zeilenweise vorgehen
-				for(int y = 0; y < height; y++)
-				{
-					// Der vorherige Pixel
-					int prev = -5; // -5 ist ein Wert, den kein Pixel annehmen kann (nur -4 bis 255)
-
-					// Bereich festlegen, in dem sich überhaupt etwas anderes als Transparenz befindet (vom Bildrand ausgehend)
-					int start = aktFID.BinaryRowEdge[y]._left;
-					int end = width - aktFID.BinaryRowEdge[y]._right - 1;
-
-					// Aktuelle Position (Beginn dort, wo sich keine Transparenz mehr befindet)
-					int pos = start;
-
-					// Anzahl der Blöcke vom gleichen Typ
-					int typeCount = 0;
-
-					// Der aktuelle Typ
-					string type = "null";
-
-					// Positionsvariablen für Farbblöcke
-					int colorStart = -1;
-					int colorLength = -1;
-
-					// Alle Pixel bis zum Bereichsende durchgehen
-					while(pos <= end)
-					{
-						// Der aktuelle Pixel
-						int currentPixel = xCommandTable[y, pos];
-
-						// Liegt keine Farbe/Spielerfarbe mehr vor und beginnt ein Masken-Block (negativer Wert) bzw. beginnt ein anderer Masken-Block als der aktuell laufende?
-						if(currentPixel != prev && currentPixel < 0)
-						{
-							// Wenn aktuell eine Maske läuft, diese in die Kommandotabelle übernehmen
-							if(type != "null" && type != "color")
-							{
-								if(type == "transp")
-									cmdTransp(ref aktFID, typeCount);
-								else if(type == "outline1")
-									cmdOutline1(ref aktFID, typeCount);
-								else if(type == "outline2")
-									cmdOutline2(ref aktFID, typeCount);
-								else if(type == "shadow")
-									cmdShadow(ref aktFID, typeCount);
-							}
-							else if(type == "color")
-							{
-								// Farben in Byte-Array schreiben
-								byte[] colors = new byte[colorLength];
-								for(int i = 0; i < colorLength; i++)
-								{
-									colors[i] = (byte)xCommandTable[y, colorStart + i];
-								}
-
-								// Farben in Kommandotabelle übernehmen
-								cmdColorBlock(ref aktFID, colors, (settings & Settings.UsePlayerColor) == Settings.UsePlayerColor);
-
-								// Der Farbblock ist zuende
-								colorStart = -1;
-								colorLength = -1;
-							}
-
-							// Neuen Typen erstellen
-							typeCount = 1;
-							if(currentPixel == -1)
-								type = "transp";
-							else if(currentPixel == -2)
-								type = "outline1";
-							else if(currentPixel == -3)
-								type = "outline2";
-							else if(currentPixel == -4)
-								type = "shadow";
-
-							// Aktuellen Pixelwert speichern, um ihn beim nächsten Durchlauf wieder verwenden zu können
-							prev = currentPixel;
-						}
-						else if(currentPixel != prev && prev < 0) // Wechsel von Maske zu Farbe
-						{
-							// Den vorherigen Block schreiben
-							if(type == "transp")
-								cmdTransp(ref aktFID, typeCount);
-							else if(type == "outline1")
-								cmdOutline1(ref aktFID, typeCount);
-							else if(type == "outline2")
-								cmdOutline2(ref aktFID, typeCount);
-							else if(type == "shadow")
-								cmdShadow(ref aktFID, typeCount);
-
-							// Neuen Typen erstellen
-							typeCount = 1;
-							type = "color";
-
-							// Farbblockeigenschaften festlegen
-							colorStart = pos;
-							colorLength = 1;
-
-							// Aktuellen Pixelwert speichern, um ihn beim nächsten Durchlauf wieder verwenden zu können
-							prev = currentPixel;
-						}
-						else if(type == "color") // Farbblock geht weiter
-						{
-							// Farbblock verlängern (egal, welche Farbe)
-							colorLength++;
-							typeCount = 1;
-
-							// Aktuellen Pixel speichern
-							prev = currentPixel;
-						}
-						else // Maske geht weiter
-						{
-							// Anzahl erhöhen, der letzte Pixel ist natürlich der gleiche wie der aktuelle
-							typeCount++;
-						}
-
-						// Nächster Pixel
-						pos++;
-					}
-
-					// Letzten offenen Block noch beenden
-					if(type == "color") // Farbblock
-					{
-						// Farben in Byte-Array schreiben
-						byte[] colors = new byte[colorLength];
-						for(int i = 0; i < colorLength; i++)
-						{
-							colors[i] = (byte)xCommandTable[y, colorStart + i];
-						}
-
-						// Farben in Kommandotabelle übernehmen
-						cmdColorBlock(ref aktFID, colors, (settings & Settings.UsePlayerColor) == Settings.UsePlayerColor);
-
-						// Der Farbblock ist zuende
-						colorStart = -1;
-						colorLength = -1;
-					}
-					else // Maske
-					{
-						// Den Maskenblock schreiben
-						if(type == "transp")
-							cmdTransp(ref aktFID, typeCount);
-						else if(type == "outline1")
-							cmdOutline1(ref aktFID, typeCount);
-						else if(type == "outline2")
-							cmdOutline2(ref aktFID, typeCount);
-						else if(type == "shadow")
-							cmdShadow(ref aktFID, typeCount);
-					}
-
-					// Zeilenende schreiben
-					cmdEOL(ref aktFID);
-				}
-			}
-
-			#endregion Erstellung der binären Ziel-Kommandotabelle
+			CreateBinaryCommandTable(aktFID, width, height, settings);
 
 			// Frame-Daten-Variablen speichern
 			_frameInformationHeaders[frameID] = aktFIH;
@@ -1574,6 +1418,167 @@ namespace SLPLoader
 			_headers.FrameCount = (uint)_frameInformationHeaders.Count;
 
 			// Fertig: RowEdge-Daten und Kommandotabelle vollständig erstellt.
+		}
+
+		/// <summary>
+		/// Erstellt für die angegebenen Framedaten die binäre Kommando-Tabelle
+		/// </summary>
+		/// <param name="fid">Die Framedaten.</param>
+		/// <param name="width">Die Breite des Frames.</param>
+		/// <param name="height">Die Höhe des Frames.</param>
+		/// <param name="settings">Die Einstellungen des Frames.</param>
+		public void CreateBinaryCommandTable(FrameInformationData fid, int width, int height, Settings settings)
+		{
+			// Zeilenweise vorgehen
+			for(int y = 0; y < height; y++)
+			{
+				// Der vorherige Pixel
+				int prev = -5; // -5 ist ein Wert, den kein Pixel annehmen kann (nur -4 bis 255)
+
+				// Bereich festlegen, in dem sich überhaupt etwas anderes als Transparenz befindet (vom Bildrand ausgehend)
+				int start = fid.BinaryRowEdge[y]._left;
+				int end = width - fid.BinaryRowEdge[y]._right - 1;
+
+				// Aktuelle Position (Beginn dort, wo sich keine Transparenz mehr befindet)
+				int pos = start;
+
+				// Anzahl der Blöcke vom gleichen Typ
+				int typeCount = 0;
+
+				// Der aktuelle Typ
+				string type = "null";
+
+				// Positionsvariablen für Farbblöcke
+				int colorStart = -1;
+				int colorLength = -1;
+
+				// Alle Pixel bis zum Bereichsende durchgehen
+				while(pos <= end)
+				{
+					// Der aktuelle Pixel
+					int currentPixel = fid.CommandTable[y, pos];
+
+					// Liegt keine Farbe/Spielerfarbe mehr vor und beginnt ein Masken-Block (negativer Wert) bzw. beginnt ein anderer Masken-Block als der aktuell laufende?
+					if(currentPixel != prev && currentPixel < 0)
+					{
+						// Wenn aktuell eine Maske läuft, diese in die Kommandotabelle übernehmen
+						if(type != "null" && type != "color")
+						{
+							if(type == "transp")
+								cmdTransp(ref fid, typeCount);
+							else if(type == "outline1")
+								cmdOutline1(ref fid, typeCount);
+							else if(type == "outline2")
+								cmdOutline2(ref fid, typeCount);
+							else if(type == "shadow")
+								cmdShadow(ref fid, typeCount);
+						}
+						else if(type == "color")
+						{
+							// Farben in Byte-Array schreiben
+							byte[] colors = new byte[colorLength];
+							for(int i = 0; i < colorLength; i++)
+							{
+								colors[i] = (byte)fid.CommandTable[y, colorStart + i];
+							}
+
+							// Farben in Kommandotabelle übernehmen
+							cmdColorBlock(ref fid, colors, (settings & Settings.UsePlayerColor) == Settings.UsePlayerColor);
+
+							// Der Farbblock ist zuende
+							colorStart = -1;
+							colorLength = -1;
+						}
+
+						// Neuen Typen erstellen
+						typeCount = 1;
+						if(currentPixel == -1)
+							type = "transp";
+						else if(currentPixel == -2)
+							type = "outline1";
+						else if(currentPixel == -3)
+							type = "outline2";
+						else if(currentPixel == -4)
+							type = "shadow";
+
+						// Aktuellen Pixelwert speichern, um ihn beim nächsten Durchlauf wieder verwenden zu können
+						prev = currentPixel;
+					}
+					else if(currentPixel != prev && prev < 0) // Wechsel von Maske zu Farbe
+					{
+						// Den vorherigen Block schreiben
+						if(type == "transp")
+							cmdTransp(ref fid, typeCount);
+						else if(type == "outline1")
+							cmdOutline1(ref fid, typeCount);
+						else if(type == "outline2")
+							cmdOutline2(ref fid, typeCount);
+						else if(type == "shadow")
+							cmdShadow(ref fid, typeCount);
+
+						// Neuen Typen erstellen
+						typeCount = 1;
+						type = "color";
+
+						// Farbblockeigenschaften festlegen
+						colorStart = pos;
+						colorLength = 1;
+
+						// Aktuellen Pixelwert speichern, um ihn beim nächsten Durchlauf wieder verwenden zu können
+						prev = currentPixel;
+					}
+					else if(type == "color") // Farbblock geht weiter
+					{
+						// Farbblock verlängern (egal, welche Farbe)
+						colorLength++;
+						typeCount = 1;
+
+						// Aktuellen Pixel speichern
+						prev = currentPixel;
+					}
+					else // Maske geht weiter
+					{
+						// Anzahl erhöhen, der letzte Pixel ist natürlich der gleiche wie der aktuelle
+						typeCount++;
+					}
+
+					// Nächster Pixel
+					pos++;
+				}
+
+				// Letzten offenen Block noch beenden
+				if(type == "color") // Farbblock
+				{
+					// Farben in Byte-Array schreiben
+					byte[] colors = new byte[colorLength];
+					for(int i = 0; i < colorLength; i++)
+					{
+						colors[i] = (byte)fid.CommandTable[y, colorStart + i];
+					}
+
+					// Farben in Kommandotabelle übernehmen
+					cmdColorBlock(ref fid, colors, (settings & Settings.UsePlayerColor) == Settings.UsePlayerColor);
+
+					// Der Farbblock ist zuende
+					colorStart = -1;
+					colorLength = -1;
+				}
+				else // Maske
+				{
+					// Den Maskenblock schreiben
+					if(type == "transp")
+						cmdTransp(ref fid, typeCount);
+					else if(type == "outline1")
+						cmdOutline1(ref fid, typeCount);
+					else if(type == "outline2")
+						cmdOutline2(ref fid, typeCount);
+					else if(type == "shadow")
+						cmdShadow(ref fid, typeCount);
+				}
+
+				// Zeilenende schreiben
+				cmdEOL(ref fid);
+			}
 		}
 
 		/// <summary>

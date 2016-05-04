@@ -80,6 +80,15 @@
             <param name="ankerY">Die Y-Koordinate des Mittelpunkts der Grafik.</param>
             <param name="settings">Die Einstellungen als Wert der Settings-Enumeration.</param>
         </member>
+        <member name="M:SLPLoader.SLPFile.CreateBinaryCommandTable(SLPLoader.SLPFile.FrameInformationData,System.Int32,System.Int32,SLPLoader.SLPFile.Settings)">
+            <summary>
+            Erstellt für die angegebenen Framedaten die binäre Kommando-Tabelle
+            </summary>
+            <param name="fid">Die Framedaten.</param>
+            <param name="width">Die Breite des Frames.</param>
+            <param name="height">Die Höhe des Frames.</param>
+            <param name="settings">Die Einstellungen des Frames.</param>
+        </member>
         <member name="M:SLPLoader.SLPFile.exportFrame(System.Int32,System.String,SLPLoader.SLPFile.Masks)">
             <summary>
             Exportiert den angegebenen Frame in eine Bitmap-Datei (50500er-Palette).
