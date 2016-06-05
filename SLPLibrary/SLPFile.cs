@@ -6,6 +6,7 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.Linq;
 
+#pragma warning disable CS1591 // TODO
 namespace SLPLoader
 {
 	/// <summary>
@@ -15,12 +16,6 @@ namespace SLPLoader
 	public class SLPFile
 	{
 		#region Variablen
-
-		/// <summary>
-		/// Definiert die ID der enthaltenen SLP-Datei.
-		/// </summary>
-		/// <remarks></remarks>
-		private ushort _resourceID;
 
 		/// <summary>
 		/// Die SLP-Datei.
@@ -49,7 +44,7 @@ namespace SLPLoader
 
 		public Header _headers = new Header();
 		public List<FrameInformationHeader> _frameInformationHeaders = new List<FrameInformationHeader>();
-		public List<FrameInformationData> _frameInformationenDaten = new List<FrameInformationData>();
+		public List<FrameInformationData> _frameInformationData = new List<FrameInformationData>();
 
 		// Umgesetzte Befehlswerte. Übernommen vom Mod Workshop.
 		private const byte _maske = 0; // -1
@@ -65,28 +60,28 @@ namespace SLPLoader
 		/// <summary>
 		/// Lädt eine angegebene SLP-Datei.
 		/// </summary>
-		/// <param name="Data">Eine Instanz der PufferKlasse-Klasse mit den SLP-Daten.</param>
+		/// <param name="data">Ein Puffer mit den SLP-Daten. Die Leseposition wird entsprechend der Datenlänge erhöht.</param>
 		/// <remarks></remarks>
-		public SLPFile(RAMBuffer Data)
+		public SLPFile(RAMBuffer data)
 		{
-			_dataBuffer = Data;
-			_dataBuffer.Position = 0;
-			loadData();
+			_dataBuffer = new RAMBuffer();
+			loadData(data);
 		}
 
 		/// <summary>
 		/// Lädt die SLP-Daten.
 		/// </summary>
+		/// <param name="buffer">Ein Puffer mit den SLP-Daten. Die Leseposition wird entsprechend der Datenlänge erhöht.</param>
 		/// <remarks></remarks>
-		private void loadData()
+		private void loadData(RAMBuffer buffer)
 		{
 			// Header
 
 			#region SLP-Header
 
-			_headers.Version = _dataBuffer.ReadString(4);
-			_headers.FrameCount = ReadUInteger();
-			_headers.Comment = _dataBuffer.ReadString(24);
+			_headers.Version = buffer.ReadString(4);
+			_headers.FrameCount = buffer.ReadUInteger();
+			_headers.Comment = buffer.ReadString(24);
 
 			#endregion SLP-Header
 
@@ -100,24 +95,24 @@ namespace SLPLoader
 				FrameInformationHeader aktFIH = new FrameInformationHeader();
 
 				// Der Zeichenindex in der SLP-Datei, an dem die Kommandotabelle des Frames beginnt
-				aktFIH.FrameCommandsOffset = ReadUInteger();
+				aktFIH.FrameCommandsOffset = buffer.ReadUInteger();
 
 				// Der Zeichenindex in der SLP-Datei, an dem die Umrissdaten (RowEdge) des Frames gespeichert sind
-				aktFIH.FrameOutlineOffset = ReadUInteger();
+				aktFIH.FrameOutlineOffset = buffer.ReadUInteger();
 
 				// Der Zeichenindex in der SLP-Datei, an dem die Farbpalette des Frames definiert ist; Genaueres ist nicht bekannt
-				aktFIH.PaletteOffset = ReadUInteger();
+				aktFIH.PaletteOffset = buffer.ReadUInteger();
 
 				// Die Frame-Eigenschaften; die Bedeutung dieses Werts ist unbekannt
-				aktFIH.Properties = ReadUInteger();
+				aktFIH.Properties = buffer.ReadUInteger();
 
 				// Die Abmessungen des Frames
-				aktFIH.Width = ReadUInteger();
-				aktFIH.Height = ReadUInteger();
+				aktFIH.Width = buffer.ReadUInteger();
+				aktFIH.Height = buffer.ReadUInteger();
 
 				// Die Anker (Mittelpunkt) des Frames
-				aktFIH.AnchorX = ReadInteger();
-				aktFIH.AnchorY = ReadInteger();
+				aktFIH.AnchorX = buffer.ReadInteger();
+				aktFIH.AnchorY = buffer.ReadInteger();
 
 				// Frame-Header in die zentrale Liste schreiben
 				_frameInformationHeaders.Add(aktFIH);
@@ -158,8 +153,8 @@ namespace SLPLoader
 				for(int j = 0; j < aktFIH.Height; j++)
 				{
 					// Werte einlesen
-					ushort left = ReadUShort(); // Links
-					ushort right = ReadUShort(); // Rechts
+					ushort left = buffer.ReadUShort(); // Links
+					ushort right = buffer.ReadUShort(); // Rechts
 
 					// Evtl. falsche Werte korrigieren
 					{
@@ -193,7 +188,7 @@ namespace SLPLoader
 				aktFID.CommandTableOffsets = new uint[aktFIH.Height];
 				for(int j = 0; j < aktFIH.Height; j++)
 				{
-					aktFID.CommandTableOffsets[j] = ReadUInteger();
+					aktFID.CommandTableOffsets[j] = buffer.ReadUInteger();
 				}
 
 				#endregion Kommandotabellen-Offsets
@@ -226,7 +221,7 @@ namespace SLPLoader
 					while(Weiter)
 					{
 						// Das aktuelle Kommandobyte
-						byte aktKommandoByte = ReadByte();
+						byte aktKommandoByte = buffer.ReadByte();
 
 						// Das aktuelle Kommando (die ersten vier Bits des Kommandobytes) Wird berechnet, um das oft mit der Datenlänge korrelierte Kommandobyte bestimmen zu können (es müssen nur die Werte 0 bis 15 abgefragt werden, statt eigentlich 0 bis 255; weiterhin geben immer die ersten 2 oder 4 Bits das Kommando an, die anderen 4 oder 6 meist nur die jeweilige Länge)
 						byte aktKommando = (byte)(aktKommandoByte & 0x0F);
@@ -244,7 +239,7 @@ namespace SLPLoader
 									int len = aktKommandoByte >> 2;
 
 									// Daten einlesen
-									byte[] dat = ReadBytes(len);
+									byte[] dat = buffer.ReadByteArray(len);
 
 									// Daten in die Kommandotabelle schreiben
 									for(int k = 0; k < len; k++)
@@ -292,13 +287,13 @@ namespace SLPLoader
 							case 0x02:
 								{
 									// Hilfs-Kommandobyte auslesen
-									byte byte2 = ReadByte();
+									byte byte2 = buffer.ReadByte();
 
 									// Länge ermitteln
 									int len = ((aktKommandoByte & 0xF0) << 4) + byte2;
 
 									// Daten einlesen
-									byte[] dat = ReadBytes(len);
+									byte[] dat = buffer.ReadByteArray(len);
 
 									// Daten in die Kommandotabelle schreiben
 									for(int k = 0; k < len; k++)
@@ -319,7 +314,7 @@ namespace SLPLoader
 							case 0x03:
 								{
 									// Hilfs-Kommandobyte auslesen
-									byte byte2 = ReadByte();
+									byte byte2 = buffer.ReadByte();
 
 									// Länge ermitteln
 									int len = ((aktKommandoByte & 0xF0) << 4) + byte2;
@@ -354,7 +349,7 @@ namespace SLPLoader
 									// Die oberen 4 Bits sind 0, wenn die Länge im nächsten Byte angegeben ist; ansonsten werden diese um 4 nach rechts verschoben und sind somit als Längenangabe verwendbar
 									if(next4Bits == 0)
 									{
-										len = ReadByte();
+										len = buffer.ReadByte();
 									}
 									else
 									{
@@ -362,7 +357,7 @@ namespace SLPLoader
 									}
 
 									// Daten auslesen
-									byte[] dat = ReadBytes(len);
+									byte[] dat = buffer.ReadByteArray(len);
 
 									// Daten durchgehen
 									for(int k = 0; k < len; k++)
@@ -404,7 +399,7 @@ namespace SLPLoader
 									// Die oberen 4 Bits sind 0, wenn die Länge im nächsten Byte angegeben ist; ansonsten werden diese um 4 nach rechts verschoben und sind somit als Längenangabe verwendbar
 									if(next4Bits == 0)
 									{
-										len = ReadByte();
+										len = buffer.ReadByte();
 									}
 									else
 									{
@@ -412,7 +407,7 @@ namespace SLPLoader
 									}
 
 									// Das nächste Byte gibt die Farbe an
-									byte farbe = ReadByte();
+									byte farbe = buffer.ReadByte();
 
 									// Hilfsvariable für das Binary-Schreiben
 									byte[] dat = new byte[len];
@@ -448,7 +443,7 @@ namespace SLPLoader
 									// Die oberen 4 Bits sind 0, wenn die Länge im nächsten Byte angegeben ist; ansonsten werden diese um 4 nach rechts verschoben und sind somit als Längenangabe verwendbar
 									if(next4Bits == 0)
 									{
-										len = ReadByte();
+										len = buffer.ReadByte();
 									}
 									else
 									{
@@ -456,7 +451,7 @@ namespace SLPLoader
 									}
 
 									// Das nächste Byte gibt die Grundfarbe an
-									byte farbe = ReadByte();
+									byte farbe = buffer.ReadByte();
 
 									// Hilfsvariable für das Binary-Schreiben
 									byte[] dat = new byte[len];
@@ -501,7 +496,7 @@ namespace SLPLoader
 									// Die oberen 4 Bits sind 0, wenn die Länge im nächsten Byte angegeben ist; ansonsten werden diese um 4 nach rechts verschoben und sind somit als Längenangabe verwendbar
 									if(next4Bits == 0)
 									{
-										len = ReadByte();
+										len = buffer.ReadByte();
 									}
 									else
 									{
@@ -572,7 +567,7 @@ namespace SLPLoader
 										case 0x5E:
 											{
 												// Blocklänge abrufen
-												int len = ReadByte();
+												int len = buffer.ReadByte();
 
 												// Outlinepixel in der angegebenen Anzahl auf das Bild schreiben
 												for(int k = 0; k < len; k++)
@@ -596,7 +591,7 @@ namespace SLPLoader
 										case 0x7E:
 											{
 												// Blocklänge abrufen
-												int len = ReadByte();
+												int len = buffer.ReadByte();
 
 												// Outlinepixel in der angegebenen Anzahl auf das Bild schreiben
 												for(int k = 0; k < len; k++)
@@ -644,7 +639,7 @@ namespace SLPLoader
 				#endregion Kommandotabelle
 
 				// Framedaten zur zentralen Liste hinzufügen
-				_frameInformationenDaten.Add(aktFID);
+				_frameInformationData.Add(aktFID);
 			} // Ende for: Frame für Frame
 
 			// Einstellungen speichern
@@ -668,19 +663,17 @@ namespace SLPLoader
 
 			// Header
 			WriteString(_headers.Version, 4);
-			WriteUInteger((uint)_frameInformationHeaders.Count());
+			_headers.FrameCount = (uint)_frameInformationHeaders.Count();
+			WriteUInteger(_headers.FrameCount);
 			WriteString(_headers.Comment, 24);
 
 			#region Berechnungen zu den einzelnen Frames
 
-			// Anzahl der Frames ermitteln
-			uint anzahlFrames = (uint)_frameInformationHeaders.Count();
-
 			// Offset der ersten RowEdge-Definition (SLP-Header: 32 Byte; Frame-Header: 32 Byte pro Frame)
-			uint pointer = 32 + 32 * anzahlFrames;
+			uint pointer = 32 + 32 * _headers.FrameCount;
 
 			// Offsets berechnen
-			for(int i = 0; i < anzahlFrames; i++)
+			for(int i = 0; i < _headers.FrameCount; i++)
 			{
 				// Aktuelle Frameheader abrufen
 				FrameInformationHeader aktFIH = _frameInformationHeaders[i];
@@ -698,7 +691,7 @@ namespace SLPLoader
 				pointer += aktFIH.Height * 4;
 
 				// Berechnung der Kommando-Offsets
-				FrameInformationData aktFID = _frameInformationenDaten[i];
+				FrameInformationData aktFID = _frameInformationData[i];
 
 				// Offsets der Kommandotabelle berechnen
 				for(int j = 0; j < aktFIH.Height; j++)
@@ -712,7 +705,7 @@ namespace SLPLoader
 
 				// FIH und FID speichern
 				_frameInformationHeaders[i] = aktFIH;
-				_frameInformationenDaten[i] = aktFID;
+				_frameInformationData[i] = aktFID;
 			}
 
 			#endregion Berechnungen zu den einzelnen Frames
@@ -721,7 +714,7 @@ namespace SLPLoader
 
 			#region Frameheader schreiben
 
-			for(int i = 0; i < anzahlFrames; i++)
+			for(int i = 0; i < _headers.FrameCount; i++)
 			{
 				// Aktuelle Frameheader abrufen
 				FrameInformationHeader aktFIH = _frameInformationHeaders[i];
@@ -752,7 +745,7 @@ namespace SLPLoader
 			for(int i = 0; i < _headers.FrameCount; i++)
 			{
 				FrameInformationHeader aktFIH = _frameInformationHeaders[i];
-				FrameInformationData aktFID = _frameInformationenDaten[i];
+				FrameInformationData aktFID = _frameInformationData[i];
 
 				// RowEdge
 				for(int j = 0; j < aktFIH.Height; j++)
@@ -826,7 +819,7 @@ namespace SLPLoader
 		{
 			// Framedaten abrufen
 			FrameInformationHeader frameHeader = _frameInformationHeaders[(int)frameID];
-			FrameInformationData frameData = _frameInformationenDaten[(int)frameID];
+			FrameInformationData frameData = _frameInformationData[(int)frameID];
 
 			// Rückgabebild erstellen
 			Bitmap ret = new Bitmap((int)frameHeader.Width, (int)frameHeader.Height);
@@ -911,7 +904,7 @@ namespace SLPLoader
 					for(int j = 0; j < frameHeader.Height; j++)
 					{
 						// Palettenindex abrufen
-						int farbID = _frameInformationenDaten[(int)frameID].CommandTable[j, i];
+						int farbID = _frameInformationData[(int)frameID].CommandTable[j, i];
 
 						// Je nach Masken Farben setzen
 						if(farbID == maskIndex)
@@ -938,7 +931,7 @@ namespace SLPLoader
 					for(int j = 0; j < frameHeader.Height; j++)
 					{
 						// Palettenindex abrufen
-						int farbID = _frameInformationenDaten[(int)frameID].CommandTable[j, i];
+						int farbID = _frameInformationData[(int)frameID].CommandTable[j, i];
 
 						// Liegt keine Spielerfarbe vor?
 						if(farbID < 16 || farbID > 23)
@@ -981,7 +974,7 @@ namespace SLPLoader
 					for(int j = 0; j < FIH.Height; j++)
 					{
 						// Palettenindex abrufen
-						int farbID = _frameInformationenDaten[(int)frameID].CommandTable[j, i];
+						int farbID = _frameInformationData[(int)frameID].CommandTable[j, i];
 
 						// Sonderindizes in die jeweiligen Farben umsetzen; meist Rein-Weiß
 						switch(farbID)
@@ -1040,7 +1033,7 @@ namespace SLPLoader
 					for(int j = 0; j < FIH.Height; j++)
 					{
 						// Palettenindex abrufen
-						int farbID = _frameInformationenDaten[(int)frameID].CommandTable[j, i];
+						int farbID = _frameInformationData[(int)frameID].CommandTable[j, i];
 
 						// Je nach Masken Farben setzen
 						if(farbID == maskIndex)
@@ -1067,7 +1060,7 @@ namespace SLPLoader
 					for(int j = 0; j < FIH.Height; j++)
 					{
 						// Palettenindex abrufen
-						int farbID = _frameInformationenDaten[(int)frameID].CommandTable[j, i];
+						int farbID = _frameInformationData[(int)frameID].CommandTable[j, i];
 
 						// Liegt keine Spielerfarbe vor?
 						if(farbID < 16 || farbID > 23)
@@ -1108,21 +1101,21 @@ namespace SLPLoader
 			FrameInformationHeader aktFIH;
 
 			// Neuer Frame?
-			if(frameID < 0 || frameID >= _frameInformationenDaten.Count)
+			if(frameID < 0 || frameID >= _frameInformationData.Count)
 			{
 				// Neue Framedaten erstellen
 				aktFID = new FrameInformationData();
-				_frameInformationenDaten.Add(aktFID);
+				_frameInformationData.Add(aktFID);
 				aktFIH = new FrameInformationHeader();
 				_frameInformationHeaders.Add(aktFIH);
 
 				// Neue Frame-ID ermitteln
-				frameID = _frameInformationenDaten.Count - 1;
+				frameID = _frameInformationData.Count - 1;
 			}
 			else
 			{
 				// Frame laden
-				aktFID = _frameInformationenDaten[frameID];
+				aktFID = _frameInformationData[frameID];
 				aktFIH = _frameInformationHeaders[frameID];
 			}
 
@@ -1156,12 +1149,6 @@ namespace SLPLoader
 			int[,] xCommandTable; // [Y, X] => Hilfsvariable für effizienteren Zugriff, enthält alle Palettenverweise des Bilds bzw. die negativen Masken-Pixel
 			aktFID.CommandTable = new int[height, width];
 			{
-				// Vordefinition, um Zeit zu sparen
-				Color aktC; // Bildpixel
-				Color aktPC; // Palettenfarbe
-				double temp; // Abstand
-				double distance; // Größtmöglicher Farbabstand / aktuell nächster Farbabstand
-
 				// Bildindizes (Daten) in die umgesetzte Kommandotabelle schreiben
 				for(int i = 0; i < height; i++)
 				{
@@ -1421,172 +1408,177 @@ namespace SLPLoader
 			#endregion Generierung der RowEdge-Daten
 
 			// Ziel-Kommando-Tabelle erstellen
-
-			#region Erstellung der binären Ziel-Kommandotabelle
-
-			{
-				// Zeilenweise vorgehen
-				for(int y = 0; y < height; y++)
-				{
-					// Der vorherige Pixel
-					int prev = -5; // -5 ist ein Wert, den kein Pixel annehmen kann (nur -4 bis 255)
-
-					// Bereich festlegen, in dem sich überhaupt etwas anderes als Transparenz befindet (vom Bildrand ausgehend)
-					int start = aktFID.BinaryRowEdge[y]._left;
-					int end = width - aktFID.BinaryRowEdge[y]._right - 1;
-
-					// Aktuelle Position (Beginn dort, wo sich keine Transparenz mehr befindet)
-					int pos = start;
-
-					// Anzahl der Blöcke vom gleichen Typ
-					int typeCount = 0;
-
-					// Der aktuelle Typ
-					string type = "null";
-
-					// Positionsvariablen für Farbblöcke
-					int colorStart = -1;
-					int colorLength = -1;
-
-					// Alle Pixel bis zum Bereichsende durchgehen
-					while(pos <= end)
-					{
-						// Der aktuelle Pixel
-						int currentPixel = xCommandTable[y, pos];
-
-						// Liegt keine Farbe/Spielerfarbe mehr vor und beginnt ein Masken-Block (negativer Wert) bzw. beginnt ein anderer Masken-Block als der aktuell laufende?
-						if(currentPixel != prev && currentPixel < 0)
-						{
-							// Wenn aktuell eine Maske läuft, diese in die Kommandotabelle übernehmen
-							if(type != "null" && type != "color")
-							{
-								if(type == "transp")
-									cmdTransp(ref aktFID, typeCount);
-								else if(type == "outline1")
-									cmdOutline1(ref aktFID, typeCount);
-								else if(type == "outline2")
-									cmdOutline2(ref aktFID, typeCount);
-								else if(type == "shadow")
-									cmdShadow(ref aktFID, typeCount);
-							}
-							else if(type == "color")
-							{
-								// Farben in Byte-Array schreiben
-								byte[] colors = new byte[colorLength];
-								for(int i = 0; i < colorLength; i++)
-								{
-									colors[i] = (byte)xCommandTable[y, colorStart + i];
-								}
-
-								// Farben in Kommandotabelle übernehmen
-								cmdColorBlock(ref aktFID, colors, (settings & Settings.UsePlayerColor) == Settings.UsePlayerColor);
-
-								// Der Farbblock ist zuende
-								colorStart = -1;
-								colorLength = -1;
-							}
-
-							// Neuen Typen erstellen
-							typeCount = 1;
-							if(currentPixel == -1)
-								type = "transp";
-							else if(currentPixel == -2)
-								type = "outline1";
-							else if(currentPixel == -3)
-								type = "outline2";
-							else if(currentPixel == -4)
-								type = "shadow";
-
-							// Aktuellen Pixelwert speichern, um ihn beim nächsten Durchlauf wieder verwenden zu können
-							prev = currentPixel;
-						}
-						else if(currentPixel != prev && prev < 0) // Wechsel von Maske zu Farbe
-						{
-							// Den vorherigen Block schreiben
-							if(type == "transp")
-								cmdTransp(ref aktFID, typeCount);
-							else if(type == "outline1")
-								cmdOutline1(ref aktFID, typeCount);
-							else if(type == "outline2")
-								cmdOutline2(ref aktFID, typeCount);
-							else if(type == "shadow")
-								cmdShadow(ref aktFID, typeCount);
-
-							// Neuen Typen erstellen
-							typeCount = 1;
-							type = "color";
-
-							// Farbblockeigenschaften festlegen
-							colorStart = pos;
-							colorLength = 1;
-
-							// Aktuellen Pixelwert speichern, um ihn beim nächsten Durchlauf wieder verwenden zu können
-							prev = currentPixel;
-						}
-						else if(type == "color") // Farbblock geht weiter
-						{
-							// Farbblock verlängern (egal, welche Farbe)
-							colorLength++;
-							typeCount = 1;
-
-							// Aktuellen Pixel speichern
-							prev = currentPixel;
-						}
-						else // Maske geht weiter
-						{
-							// Anzahl erhöhen, der letzte Pixel ist natürlich der gleiche wie der aktuelle
-							typeCount++;
-						}
-
-						// Nächster Pixel
-						pos++;
-					}
-
-					// Letzten offenen Block noch beenden
-					if(type == "color") // Farbblock
-					{
-						// Farben in Byte-Array schreiben
-						byte[] colors = new byte[colorLength];
-						for(int i = 0; i < colorLength; i++)
-						{
-							colors[i] = (byte)xCommandTable[y, colorStart + i];
-						}
-
-						// Farben in Kommandotabelle übernehmen
-						cmdColorBlock(ref aktFID, colors, (settings & Settings.UsePlayerColor) == Settings.UsePlayerColor);
-
-						// Der Farbblock ist zuende
-						colorStart = -1;
-						colorLength = -1;
-					}
-					else // Maske
-					{
-						// Den Maskenblock schreiben
-						if(type == "transp")
-							cmdTransp(ref aktFID, typeCount);
-						else if(type == "outline1")
-							cmdOutline1(ref aktFID, typeCount);
-						else if(type == "outline2")
-							cmdOutline2(ref aktFID, typeCount);
-						else if(type == "shadow")
-							cmdShadow(ref aktFID, typeCount);
-					}
-
-					// Zeilenende schreiben
-					cmdEOL(ref aktFID);
-				}
-			}
-
-			#endregion Erstellung der binären Ziel-Kommandotabelle
+			CreateBinaryCommandTable(aktFID, width, height, settings);
 
 			// Frame-Daten-Variablen speichern
 			_frameInformationHeaders[frameID] = aktFIH;
-			_frameInformationenDaten[frameID] = aktFID;
+			_frameInformationData[frameID] = aktFID;
 
 			// Sicherheitshalber Frame-Anzahl im Header aktualisieren
 			_headers.FrameCount = (uint)_frameInformationHeaders.Count;
 
 			// Fertig: RowEdge-Daten und Kommandotabelle vollständig erstellt.
+		}
+
+		/// <summary>
+		/// Erstellt für die angegebenen Framedaten die binäre Kommando-Tabelle
+		/// </summary>
+		/// <param name="fid">Die Framedaten.</param>
+		/// <param name="width">Die Breite des Frames.</param>
+		/// <param name="height">Die Höhe des Frames.</param>
+		/// <param name="settings">Die Einstellungen des Frames.</param>
+		public void CreateBinaryCommandTable(FrameInformationData fid, int width, int height, Settings settings)
+		{
+			// Zeilenweise vorgehen
+			for(int y = 0; y < height; y++)
+			{
+				// Der vorherige Pixel
+				int prev = -5; // -5 ist ein Wert, den kein Pixel annehmen kann (nur -4 bis 255)
+
+				// Bereich festlegen, in dem sich überhaupt etwas anderes als Transparenz befindet (vom Bildrand ausgehend)
+				int start = fid.BinaryRowEdge[y]._left;
+				int end = width - fid.BinaryRowEdge[y]._right - 1;
+
+				// Aktuelle Position (Beginn dort, wo sich keine Transparenz mehr befindet)
+				int pos = start;
+
+				// Anzahl der Blöcke vom gleichen Typ
+				int typeCount = 0;
+
+				// Der aktuelle Typ
+				string type = "null";
+
+				// Positionsvariablen für Farbblöcke
+				int colorStart = -1;
+				int colorLength = -1;
+
+				// Alle Pixel bis zum Bereichsende durchgehen
+				while(pos <= end)
+				{
+					// Der aktuelle Pixel
+					int currentPixel = fid.CommandTable[y, pos];
+
+					// Liegt keine Farbe/Spielerfarbe mehr vor und beginnt ein Masken-Block (negativer Wert) bzw. beginnt ein anderer Masken-Block als der aktuell laufende?
+					if(currentPixel != prev && currentPixel < 0)
+					{
+						// Wenn aktuell eine Maske läuft, diese in die Kommandotabelle übernehmen
+						if(type != "null" && type != "color")
+						{
+							if(type == "transp")
+								cmdTransp(ref fid, typeCount);
+							else if(type == "outline1")
+								cmdOutline1(ref fid, typeCount);
+							else if(type == "outline2")
+								cmdOutline2(ref fid, typeCount);
+							else if(type == "shadow")
+								cmdShadow(ref fid, typeCount);
+						}
+						else if(type == "color")
+						{
+							// Farben in Byte-Array schreiben
+							byte[] colors = new byte[colorLength];
+							for(int i = 0; i < colorLength; i++)
+							{
+								colors[i] = (byte)fid.CommandTable[y, colorStart + i];
+							}
+
+							// Farben in Kommandotabelle übernehmen
+							cmdColorBlock(ref fid, colors, (settings & Settings.UsePlayerColor) == Settings.UsePlayerColor);
+
+							// Der Farbblock ist zuende
+							colorStart = -1;
+							colorLength = -1;
+						}
+
+						// Neuen Typen erstellen
+						typeCount = 1;
+						if(currentPixel == -1)
+							type = "transp";
+						else if(currentPixel == -2)
+							type = "outline1";
+						else if(currentPixel == -3)
+							type = "outline2";
+						else if(currentPixel == -4)
+							type = "shadow";
+
+						// Aktuellen Pixelwert speichern, um ihn beim nächsten Durchlauf wieder verwenden zu können
+						prev = currentPixel;
+					}
+					else if(currentPixel != prev && prev < 0) // Wechsel von Maske zu Farbe
+					{
+						// Den vorherigen Block schreiben
+						if(type == "transp")
+							cmdTransp(ref fid, typeCount);
+						else if(type == "outline1")
+							cmdOutline1(ref fid, typeCount);
+						else if(type == "outline2")
+							cmdOutline2(ref fid, typeCount);
+						else if(type == "shadow")
+							cmdShadow(ref fid, typeCount);
+
+						// Neuen Typen erstellen
+						typeCount = 1;
+						type = "color";
+
+						// Farbblockeigenschaften festlegen
+						colorStart = pos;
+						colorLength = 1;
+
+						// Aktuellen Pixelwert speichern, um ihn beim nächsten Durchlauf wieder verwenden zu können
+						prev = currentPixel;
+					}
+					else if(type == "color") // Farbblock geht weiter
+					{
+						// Farbblock verlängern (egal, welche Farbe)
+						colorLength++;
+						typeCount = 1;
+
+						// Aktuellen Pixel speichern
+						prev = currentPixel;
+					}
+					else // Maske geht weiter
+					{
+						// Anzahl erhöhen, der letzte Pixel ist natürlich der gleiche wie der aktuelle
+						typeCount++;
+					}
+
+					// Nächster Pixel
+					pos++;
+				}
+
+				// Letzten offenen Block noch beenden
+				if(type == "color") // Farbblock
+				{
+					// Farben in Byte-Array schreiben
+					byte[] colors = new byte[colorLength];
+					for(int i = 0; i < colorLength; i++)
+					{
+						colors[i] = (byte)fid.CommandTable[y, colorStart + i];
+					}
+
+					// Farben in Kommandotabelle übernehmen
+					cmdColorBlock(ref fid, colors, (settings & Settings.UsePlayerColor) == Settings.UsePlayerColor);
+
+					// Der Farbblock ist zuende
+					colorStart = -1;
+					colorLength = -1;
+				}
+				else // Maske
+				{
+					// Den Maskenblock schreiben
+					if(type == "transp")
+						cmdTransp(ref fid, typeCount);
+					else if(type == "outline1")
+						cmdOutline1(ref fid, typeCount);
+					else if(type == "outline2")
+						cmdOutline2(ref fid, typeCount);
+					else if(type == "shadow")
+						cmdShadow(ref fid, typeCount);
+				}
+
+				// Zeilenende schreiben
+				cmdEOL(ref fid);
+			}
 		}
 
 		/// <summary>
@@ -1613,7 +1605,7 @@ namespace SLPLoader
 					for(int j = 0; j < FIH.Height; j++)
 					{
 						// Palettenindex abrufen
-						int farbID = _frameInformationenDaten[(int)frameID].CommandTable[j, i];
+						int farbID = _frameInformationData[(int)frameID].CommandTable[j, i];
 
 						// Sonderindizes in die jeweiligen Farben umsetzen; meist Rein-Weiß
 						switch(farbID)
@@ -1672,7 +1664,7 @@ namespace SLPLoader
 					for(int j = 0; j < FIH.Height; j++)
 					{
 						// Palettenindex abrufen
-						int farbID = _frameInformationenDaten[(int)frameID].CommandTable[j, i];
+						int farbID = _frameInformationData[(int)frameID].CommandTable[j, i];
 
 						// Je nach Masken Farben setzen
 						if(farbID == maskIndex)
@@ -1699,7 +1691,7 @@ namespace SLPLoader
 					for(int j = 0; j < FIH.Height; j++)
 					{
 						// Palettenindex abrufen
-						int farbID = _frameInformationenDaten[(int)frameID].CommandTable[j, i];
+						int farbID = _frameInformationData[(int)frameID].CommandTable[j, i];
 
 						// Liegt keine Spielerfarbe vor?
 						if(farbID < 16 || farbID > 23)
@@ -1741,61 +1733,6 @@ namespace SLPLoader
 		#region Hilfsfunktionen
 
 		// Die folgenden Funktionen sind Abkürzungen, in C++ wären dies Makros.
-
-		#region Lesen
-
-		/// <summary>
-		/// Gibt genau ein Byte aus DataBuffer zurück.
-		/// </summary>
-		/// <returns></returns>
-		/// <remarks></remarks>
-		private byte ReadByte()
-		{
-			return _dataBuffer.ReadByte();
-		}
-
-		/// <summary>
-		/// Gibt ein Byte-Array aus DataBuffer zurück.
-		/// </summary>
-		/// <param name="count">Die Anzahl der auszulesenden Bytes.</param>
-		/// <returns></returns>
-		/// <remarks></remarks>
-		private byte[] ReadBytes(int count)
-		{
-			return _dataBuffer.ReadByteArray(count);
-		}
-
-		/// <summary>
-		/// Gibt genau einen UShort-Wert aus DataBuffer zurück.
-		/// </summary>
-		/// <returns></returns>
-		/// <remarks></remarks>
-		private ushort ReadUShort()
-		{
-			return _dataBuffer.ReadUShort();
-		}
-
-		/// <summary>
-		/// Gibt genau einen Integer-Wert aus DataBuffer zurück.
-		/// </summary>
-		/// <returns></returns>
-		/// <remarks></remarks>
-		private int ReadInteger()
-		{
-			return _dataBuffer.ReadInteger();
-		}
-
-		/// <summary>
-		/// Gibt genau einen UInteger-Wert aus DataBuffer zurück.
-		/// </summary>
-		/// <returns></returns>
-		/// <remarks></remarks>
-		private uint ReadUInteger()
-		{
-			return _dataBuffer.ReadUInteger();
-		}
-
-		#endregion Lesen
 
 		#region Schreiben
 
@@ -1863,12 +1800,12 @@ namespace SLPLoader
 		/// Schreibt eine Zeichenfolge in den Puffer und hängt eine binäre Null dahinter, falls dort keine stehen sollte.
 		/// </summary>
 		/// <param name="value">Die zu schreibende Zeichenfolge.</param>
-		/// <param name="SollLänge">Legt die Länge des Strings fest. Nicht belegte Zeichen werden mit 0-Bytes ergänzt.</param>
+		/// <param name="length">Legt die Länge des Strings fest. Nicht belegte Zeichen werden mit 0-Bytes ergänzt.</param>
 		/// <remarks></remarks>
-		private void WriteString(string value, int sollLänge)
+		private void WriteString(string value, int length)
 		{
 			// Byte-Array mit der gewünschten Stringlänge erstellen
-			byte[] zuSchreiben = new byte[sollLänge];
+			byte[] zuSchreiben = new byte[length];
 
 			// Zeichenfolge in Byte-Array schreiben
 			zuSchreiben = System.Text.Encoding.Default.GetBytes(value);
@@ -2297,9 +2234,9 @@ namespace SLPLoader
 
 		#endregion Hilfsfunktionen
 
-		#region
+		#region Hilfsklassen
 
-		public struct Header
+		public class Header
 		{
 			/// <summary>
 			/// Die Version der SLP. Länge: 4
@@ -2320,7 +2257,7 @@ namespace SLPLoader
 			public string Comment;
 		}
 
-		public struct FrameInformationHeader
+		public class FrameInformationHeader
 		{
 			public uint FrameCommandsOffset;
 			public uint FrameOutlineOffset;
@@ -2332,7 +2269,7 @@ namespace SLPLoader
 			public int AnchorY;
 		}
 
-		public struct FrameInformationData
+		public class FrameInformationData
 		{
 			/// <summary>
 			/// Größe: FIH-&gt;Höhe, 2.
@@ -2365,10 +2302,6 @@ namespace SLPLoader
 			/// </summary>
 			public List<SLPFile.BinaryCommand> BinaryCommandTable;
 		}
-
-		#endregion
-
-		#region Hilfsklassen
 
 		/// <summary>
 		/// Repräsentiert eine Umriss-Eigenschaft.

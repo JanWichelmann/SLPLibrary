@@ -10,12 +10,6 @@
             </summary>
             <remarks></remarks>
         </member>
-        <member name="F:SLPLoader.SLPFile._resourceID">
-            <summary>
-            Definiert die ID der enthaltenen SLP-Datei.
-            </summary>
-            <remarks></remarks>
-        </member>
         <member name="F:SLPLoader.SLPFile._dataBuffer">
             <summary>
             Die SLP-Datei.
@@ -39,13 +33,14 @@
             <summary>
             Lädt eine angegebene SLP-Datei.
             </summary>
-            <param name="Data">Eine Instanz der PufferKlasse-Klasse mit den SLP-Daten.</param>
+            <param name="data">Ein Puffer mit den SLP-Daten. Die Leseposition wird entsprechend der Datenlänge erhöht.</param>
             <remarks></remarks>
         </member>
-        <member name="M:SLPLoader.SLPFile.loadData">
+        <member name="M:SLPLoader.SLPFile.loadData(IORAMHelper.RAMBuffer)">
             <summary>
             Lädt die SLP-Daten.
             </summary>
+            <param name="buffer">Ein Puffer mit den SLP-Daten. Die Leseposition wird entsprechend der Datenlänge erhöht.</param>
             <remarks></remarks>
         </member>
         <member name="M:SLPLoader.SLPFile.writeData">
@@ -85,7 +80,15 @@
             <param name="ankerY">Die Y-Koordinate des Mittelpunkts der Grafik.</param>
             <param name="settings">Die Einstellungen als Wert der Settings-Enumeration.</param>
         </member>
-        <member name="M:SLPLoader.SLPFile.exportFrame(System.Int32,System.String,BitmapLibrary.ColorTable,SLPLoader.SLPFile.Masks)">
+        <member name="M:SLPLoader.SLPFile.CreateBinaryCommandTable(SLPLoader.SLPFile.FrameInformationData,System.Int32,System.Int32,SLPLoader.SLPFile.Settings)">
+            <summary>
+            Erstellt für die angegebenen Framedaten die binäre Kommando-Tabelle
+            </summary>
+            <param name="fid">Die Framedaten.</param>
+            <param name="width">Die Breite des Frames.</param>
+            <param name="height">Die Höhe des Frames.</param>
+            <param name="settings">Die Einstellungen des Frames.</param>
+        </member>
             <summary>
             Exportiert den angegebenen Frame in eine Bitmap-Datei (50500er-Palette).
             </summary>
@@ -99,42 +102,6 @@
             Gibt die Anzahl der Frames zurück.
             </summary>
             <value></value>
-            <returns></returns>
-            <remarks></remarks>
-        </member>
-        <member name="M:SLPLoader.SLPFile.ReadByte">
-            <summary>
-            Gibt genau ein Byte aus DataBuffer zurück.
-            </summary>
-            <returns></returns>
-            <remarks></remarks>
-        </member>
-        <member name="M:SLPLoader.SLPFile.ReadBytes(System.Int32)">
-            <summary>
-            Gibt ein Byte-Array aus DataBuffer zurück.
-            </summary>
-            <param name="count">Die Anzahl der auszulesenden Bytes.</param>
-            <returns></returns>
-            <remarks></remarks>
-        </member>
-        <member name="M:SLPLoader.SLPFile.ReadUShort">
-            <summary>
-            Gibt genau einen UShort-Wert aus DataBuffer zurück.
-            </summary>
-            <returns></returns>
-            <remarks></remarks>
-        </member>
-        <member name="M:SLPLoader.SLPFile.ReadInteger">
-            <summary>
-            Gibt genau einen Integer-Wert aus DataBuffer zurück.
-            </summary>
-            <returns></returns>
-            <remarks></remarks>
-        </member>
-        <member name="M:SLPLoader.SLPFile.ReadUInteger">
-            <summary>
-            Gibt genau einen UInteger-Wert aus DataBuffer zurück.
-            </summary>
             <returns></returns>
             <remarks></remarks>
         </member>
@@ -185,7 +152,7 @@
             Schreibt eine Zeichenfolge in den Puffer und hängt eine binäre Null dahinter, falls dort keine stehen sollte.
             </summary>
             <param name="value">Die zu schreibende Zeichenfolge.</param>
-            <param name="SollLänge">Legt die Länge des Strings fest. Nicht belegte Zeichen werden mit 0-Bytes ergänzt.</param>
+            <param name="length">Legt die Länge des Strings fest. Nicht belegte Zeichen werden mit 0-Bytes ergänzt.</param>
             <remarks></remarks>
         </member>
         <member name="F:SLPLoader.SLPFile.Header.Version">
