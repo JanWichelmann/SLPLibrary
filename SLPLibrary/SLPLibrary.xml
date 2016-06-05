@@ -85,11 +85,12 @@
             <param name="ankerY">Die Y-Koordinate des Mittelpunkts der Grafik.</param>
             <param name="settings">Die Einstellungen als Wert der Settings-Enumeration.</param>
         </member>
-        <member name="M:SLPLoader.SLPFile.exportFrame(System.Int32,System.String,SLPLoader.SLPFile.Masks)">
+        <member name="M:SLPLoader.SLPFile.exportFrame(System.Int32,System.String,BitmapLibrary.ColorTable,SLPLoader.SLPFile.Masks)">
             <summary>
             Exportiert den angegebenen Frame in eine Bitmap-Datei (50500er-Palette).
             </summary>
             <param name="frameID">Die ID des zu exportierenden Frame.</param>
+            <param name="Pal">Die Farbtabelle.</param>
             <param name="filename">Die Bitmap-Datei, in die die Daten geschrieben werden sollen.</param>
             <param name="mask">Die zu exportierende Maske (oder reine Grafik) als Element der Masks-Enumeration.</param>
         </member>

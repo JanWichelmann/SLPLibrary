@@ -1593,15 +1593,16 @@ namespace SLPLoader
 		/// Exportiert den angegebenen Frame in eine Bitmap-Datei (50500er-Palette).
 		/// </summary>
 		/// <param name="frameID">Die ID des zu exportierenden Frame.</param>
+		/// <param name="Pal">Die Farbtabelle.</param>
 		/// <param name="filename">Die Bitmap-Datei, in die die Daten geschrieben werden sollen.</param>
 		/// <param name="mask">Die zu exportierende Maske (oder reine Grafik) als Element der Masks-Enumeration.</param>
-		public void exportFrame(int frameID, string filename, Masks mask = Masks.Graphic)
+		public void exportFrame(int frameID, string filename, ColorTable Pal, Masks mask = Masks.Graphic)
 		{
 			// Framedaten abrufen
 			FrameInformationHeader FIH = _frameInformationHeaders[(int)frameID];
 
 			// Rückgabebild erstellen
-			BitmapLoader bmp = new BitmapLoader((int)FIH.Width, (int)FIH.Height);
+			BitmapLoader bmp = new BitmapLoader((int)FIH.Width, (int)FIH.Height, Pal);
 
 			// Welche Maske ist gewollt?
 			if(mask == Masks.Graphic) // Es handelt sich um die reine Frame-Grafik
