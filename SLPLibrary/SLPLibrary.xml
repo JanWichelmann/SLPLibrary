@@ -89,6 +89,7 @@
             <param name="height">Die Höhe des Frames.</param>
             <param name="settings">Die Einstellungen des Frames.</param>
         </member>
+        <member name="M:SLPLoader.SLPFile.exportFrame(System.Int32,System.String,BitmapLibrary.ColorTable,SLPLoader.SLPFile.Masks)">
             <summary>
             Exportiert den angegebenen Frame in eine Bitmap-Datei (50500er-Palette).
             </summary>
@@ -277,17 +278,17 @@
             Definiert eine Maske.
             </summary>
         </member>
-        <member name="T:SLPLoader.Properties.Resources">
+        <member name="T:SLPLibrary.Properties.Resources">
             <summary>
               Eine stark typisierte Ressourcenklasse zum Suchen von lokalisierten Zeichenfolgen usw.
             </summary>
         </member>
-        <member name="P:SLPLoader.Properties.Resources.ResourceManager">
+        <member name="P:SLPLibrary.Properties.Resources.ResourceManager">
             <summary>
               Gibt die zwischengespeicherte ResourceManager-Instanz zurück, die von dieser Klasse verwendet wird.
             </summary>
         </member>
-        <member name="P:SLPLoader.Properties.Resources.Culture">
+        <member name="P:SLPLibrary.Properties.Resources.Culture">
             <summary>
               Überschreibt die CurrentUICulture-Eigenschaft des aktuellen Threads für alle
               Ressourcenzuordnungen, die diese stark typisierte Ressourcenklasse verwenden.

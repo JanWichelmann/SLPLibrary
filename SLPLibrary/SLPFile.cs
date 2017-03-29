@@ -1707,7 +1707,7 @@ namespace SLPLoader
 			}
 
 			// Fertig, Bild speichern
-			bmp.saveToFile(filename);
+			bmp.SaveToFile(filename);
 		}
 
 		#endregion Funktionen
