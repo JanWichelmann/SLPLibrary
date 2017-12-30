@@ -1,0 +1,1 @@
+This library allows reading and writing SLP image files for *Age of Empires II: The Conquerors*.
